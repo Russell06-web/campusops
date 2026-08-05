@@ -6,128 +6,94 @@
 :root {
   color-scheme: light;
 
-  /* Neutral surfaces — quiet, government/B2B feel */
-  --color-bg: #f2f4f3;
+  /* Neutral surfaces — quiet, government/B2B feel. Light mode is the sole,
+     unconditional default (no prefers-color-scheme auto-switch) so the
+     brand reads consistently regardless of a visitor's OS setting; the
+     [data-theme="dark"] block below is kept only as a manual-override hook
+     for a possible future in-app toggle. */
+  --color-bg: #f4f7f6;
   --color-surface: #ffffff;
-  --color-surface-sunken: #f7f8f7;
-  --color-border: #e1e5e3;
-  --color-border-strong: #c7cdca;
+  --color-surface-sunken: #eef3f1;
+  --color-border: #d8e2de;
+  --color-border-strong: #bdcbc5;
 
   /* Text */
-  --color-text: #14201c;
-  --color-text-soft: #364440;
-  --color-text-muted: #5c6b66;
-  --color-text-faint: #697770;
+  --color-text: #17221f;
+  --color-text-soft: #44524d;
+  --color-text-muted: #66736e;
+  /* One step darker than the brief's literal #82908b (3.3:1 on white) so
+     small faint text — table headers, captions, timestamps — still clears
+     WCAG AA 4.5:1; same hue, same "most receded" role in the ramp. */
+  --color-text-faint: #69766f;
   --color-text-on-primary: #ffffff;
 
   /* Brand — #0F766E is the ONE primary action color (buttons, links, active
-     nav, focus rings). Deliberately not used as ambient background filler
-     across cards/icons/panels — see --color-neutral-bg for that instead. */
+     nav/selection state, focus rings on interactive brand controls).
+     Deliberately not used as ambient background filler across cards/icons/
+     panels — see --color-neutral-bg for that instead. */
   --color-primary: #0f766e;
-  --color-primary-dark: #0e5c54;
-  --color-primary-darker: #08312d;
-  --color-primary-soft: #e6f6f4;
-  --color-primary-soft-border: #bfe0da;
-  /* Text/icon ink for use ON TOP of --color-primary-soft tinted surfaces —
-     a distinct role from --color-primary-darker, which stays a dark
-     BACKGROUND (toasts/tooltips) with white text on it. This one flips to a
-     light tint in dark mode since the soft surface itself goes dark. */
-  --color-primary-soft-ink: #0b3a35;
+  --color-primary-hover: #115e59;
+  --color-primary-active: #134e4a;
+  --color-primary-soft: #ccfbf1;
+  --color-primary-soft-border: #99e6d9;
+  --color-primary-soft-ink: #115e59;
 
-  /* Status palette — reserved. Red/orange/yellow ONLY for anomaly/risk states.
-     Text roles (--color-caution/--color-risk) are tuned to clear WCAG AA
-     4.5:1 against their -bg; the *-dot tokens stay decorative-only (small
-     status dots, never carrying text) and are unchanged. */
-  --color-neutral: #5c6b66;
+  /* Status palette — reserved. Red/orange/yellow ONLY for danger/overdue/
+     warning states. Blue carries charts, links and informational/focus
+     states instead of green, so green stays legible as the one brand color. */
+  --color-neutral: #57635e;
   --color-neutral-bg: #eceeed;
-  /* #2563EB — secondary accent, reserved for charts and informational
-     surfaces (demo banner, notices), so blue rather than green carries
-     "information" and green stays legible as the one brand/action color. */
   --color-info: #2563eb;
   --color-info-bg: #eff6ff;
   --color-info-border: #bfdbfe;
-  --color-info-ink: #1e3a8a;
-  --color-caution: #8a5f09;
-  --color-caution-bg: #fbf1da;
-  --color-caution-dot: #eda100;
-  --color-risk: #9c470d;
-  --color-risk-bg: #fbe9dd;
-  --color-risk-dot: #eb6834;
-  --color-danger: #b3261e;
-  --color-danger-bg: #fbe4e2;
-  --color-danger-dot: #e34948;
-  --color-success: #146c43;
-  --color-success-bg: #e2f2e9;
-  --color-success-dot: #1a9a5c;
+  --color-info-ink: #1e40af;
+  --color-caution: #b45309;
+  --color-caution-bg: #fffbeb;
+  --color-caution-border: #fde68a;
+  --color-caution-dot: var(--color-caution);
+  --color-risk: #c2410c;
+  --color-risk-bg: #fff7ed;
+  --color-risk-border: #fed7aa;
+  --color-risk-dot: var(--color-risk);
+  --color-danger: #b91c1c;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-danger-dot: var(--color-danger);
+  --color-success: #15803d;
+  --color-success-bg: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-success-dot: var(--color-success);
   --color-violet: #5b4b93;
   --color-violet-bg: #ece9f6;
+  --color-violet-border: #d8d1ee;
 
   --sidebar-width: 248px;
   --sidebar-width-collapsed: 76px;
   --header-height: 60px;
 
   /* Sidebar is a fixed dark-green identity, independent of the light/dark
-     content theme below — it does not flip with prefers-color-scheme or the
-     [data-theme] toggle, so these are plain values, not re-declared per mode. */
-  --sidebar-bg: #0b3a35;
-  --sidebar-active-bg: #0f766e;
-  --sidebar-accent: #14b8a6;
-  --sidebar-text: #eaf6f4;
-  --sidebar-text-soft: #cfe9e4;
-  --sidebar-text-muted: #86b8b0;
-  --sidebar-border: rgba(255, 255, 255, 0.09);
-  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+     content theme — it never flips, so these are plain values, not
+     re-declared per mode. */
+  --color-sidebar: #0b3a35;
+  --color-sidebar-hover: #124a43;
+  --color-sidebar-active: #0f766e;
+  --color-sidebar-text: #eaf6f4;
+  --color-sidebar-text-soft: #cfe9e4;
+  --color-sidebar-text-muted: #86b8b0;
+  --color-sidebar-border: rgba(255, 255, 255, 0.09);
 
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
   --shadow-card: 0 1px 2px rgba(20, 32, 28, 0.06);
-  --shadow-popover: 0 8px 24px rgba(20, 32, 28, 0.16), 0 2px 6px rgba(20, 32, 28, 0.08);
+  --shadow-popover: 0 8px 24px rgba(20, 32, 28, 0.12);
 
   --font-ui: "Inter", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", Menlo, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --color-bg: #141a18;
-    --color-surface: #1b2320;
-    --color-surface-sunken: #171d1b;
-    --color-border: #2a332f;
-    --color-border-strong: #3a453f;
-    --color-text: #eef2f0;
-    --color-text-soft: #cdd6d2;
-    --color-text-muted: #a1aca6;
-    --color-text-faint: #7f8d88;
-    --color-primary: #2dd4bf;
-    --color-primary-dark: #14b8a6;
-    --color-primary-darker: #0b3a35;
-    --color-primary-soft: #0f2b28;
-    --color-primary-soft-border: #1f4a44;
-    --color-primary-soft-ink: #93e6da;
-    --color-neutral: #a1aca6;
-    --color-neutral-bg: #232b28;
-    --color-info: #60a5fa;
-    --color-info-bg: #16233d;
-    --color-info-border: #24406b;
-    --color-info-ink: #bfdbfe;
-    --color-caution: #e6b64a;
-    --color-caution-bg: #332a13;
-    --color-caution-dot: #eda100;
-    --color-risk: #ef9463;
-    --color-risk-bg: #3a2415;
-    --color-risk-dot: #eb6834;
-    --color-danger: #f08a86;
-    --color-danger-bg: #3a1c1b;
-    --color-danger-dot: #e66767;
-    --color-success: #5fce9a;
-    --color-success-bg: #17301f;
-    --color-success-dot: #1a9a5c;
-    --color-violet: #a79bdc;
-    --color-violet-bg: #262040;
-  }
-}
+/* Manual dark-mode hook (not auto-activated — see note above). Kept in sync
+   with the brand in case an in-app theme toggle is added later. */
 :root[data-theme="dark"] {
   color-scheme: dark;
   --color-bg: #141a18;
@@ -138,10 +104,10 @@
   --color-text: #eef2f0;
   --color-text-soft: #cdd6d2;
   --color-text-muted: #a1aca6;
-  --color-text-faint: #7f8d88;
+  --color-text-faint: #8b9994;
   --color-primary: #2dd4bf;
-  --color-primary-dark: #14b8a6;
-  --color-primary-darker: #0b3a35;
+  --color-primary-hover: #14b8a6;
+  --color-primary-active: #0b3a35;
   --color-primary-soft: #0f2b28;
   --color-primary-soft-border: #1f4a44;
   --color-primary-soft-ink: #93e6da;
@@ -153,18 +119,23 @@
   --color-info-ink: #bfdbfe;
   --color-caution: #e6b64a;
   --color-caution-bg: #332a13;
-  --color-caution-dot: #eda100;
+  --color-caution-border: #5c471f;
+  --color-caution-dot: var(--color-caution);
   --color-risk: #ef9463;
   --color-risk-bg: #3a2415;
-  --color-risk-dot: #eb6834;
+  --color-risk-border: #5c3a24;
+  --color-risk-dot: var(--color-risk);
   --color-danger: #f08a86;
   --color-danger-bg: #3a1c1b;
-  --color-danger-dot: #e66767;
+  --color-danger-border: #5c2d2b;
+  --color-danger-dot: var(--color-danger);
   --color-success: #5fce9a;
   --color-success-bg: #17301f;
-  --color-success-dot: #1a9a5c;
+  --color-success-border: #285039;
+  --color-success-dot: var(--color-success);
   --color-violet: #a79bdc;
   --color-violet-bg: #262040;
+  --color-violet-border: #3c3260;
 }
 
 * { box-sizing: border-box; }
@@ -210,8 +181,8 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.35; }
   position: fixed;
   inset: 0 auto 0 0;
   width: var(--sidebar-width);
-  background: var(--sidebar-bg);
-  border-right: 1px solid var(--sidebar-border);
+  background: var(--color-sidebar);
+  border-right: 1px solid var(--color-sidebar-border);
   display: flex;
   flex-direction: column;
   z-index: 40;
@@ -226,25 +197,25 @@ body.sidebar-collapsed .sidebar { width: var(--sidebar-width-collapsed); }
   align-items: center;
   gap: 10px;
   padding: 0 20px;
-  border-bottom: 1px solid var(--sidebar-border);
+  border-bottom: 1px solid var(--color-sidebar-border);
   flex-shrink: 0;
   overflow: hidden;
 }
 .sidebar-brand .brand-mark {
   width: 30px; height: 30px; border-radius: var(--radius-md);
-  background: var(--sidebar-accent); color: #fff;
+  background: var(--color-sidebar-active); color: #fff;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .sidebar-brand .brand-mark svg { width: 18px; height: 18px; }
-.sidebar-brand .brand-text { font-size: 16px; font-weight: 700; white-space: nowrap; letter-spacing: 0.2px; color: var(--sidebar-text); }
-.sidebar-brand .brand-sub { font-size: 11px; color: var(--sidebar-text-muted); white-space: nowrap; }
+.sidebar-brand .brand-text { font-size: 16px; font-weight: 700; white-space: nowrap; letter-spacing: 0.2px; color: var(--color-sidebar-text); }
+.sidebar-brand .brand-sub { font-size: 11px; color: var(--color-sidebar-text-muted); white-space: nowrap; }
 body.sidebar-collapsed .brand-text,
 body.sidebar-collapsed .brand-sub { display: none; }
 
 .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
 .sidebar-section-label {
-  font-size: 11px; font-weight: 600; color: var(--sidebar-text-muted);
+  font-size: 11px; font-weight: 600; color: var(--color-sidebar-text-muted);
   text-transform: uppercase; letter-spacing: 0.06em;
   padding: 14px 12px 6px;
 }
@@ -254,27 +225,27 @@ body.sidebar-collapsed .sidebar-section-label { display: none; }
   display: flex; align-items: center; gap: 12px;
   height: 38px; padding: 0 12px;
   border-radius: var(--radius-md);
-  font-size: 14px; color: var(--sidebar-text-soft);
+  font-size: 14px; color: var(--color-sidebar-text-soft);
   cursor: pointer; white-space: nowrap; position: relative;
 }
-.sidebar-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-text); }
+.sidebar-link:hover { background: var(--color-sidebar-hover); color: var(--color-sidebar-text); }
 .sidebar-link svg { flex-shrink: 0; width: 18px; height: 18px; }
 .sidebar-link.active {
-  background: var(--sidebar-active-bg);
+  background: var(--color-sidebar-active);
   color: #fff;
   font-weight: 600;
 }
 .sidebar-link .lock-flag {
-  margin-left: auto; width: 14px; height: 14px; color: var(--sidebar-text-muted); flex-shrink: 0;
+  margin-left: auto; width: 14px; height: 14px; color: var(--color-sidebar-text-muted); flex-shrink: 0;
 }
 .sidebar-link.active .lock-flag { color: rgba(255,255,255,0.75); }
 body.sidebar-collapsed .sidebar-link span:not(.lock-flag),
 body.sidebar-collapsed .sidebar-link .lock-flag { display: none; }
 body.sidebar-collapsed .sidebar-link { justify-content: center; }
 
-.sidebar-foot { border-top: 1px solid var(--sidebar-border); padding: 8px; flex-shrink: 0; }
-.sidebar-foot .sidebar-link { color: var(--sidebar-text-soft); }
-.sidebar-foot .sidebar-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-text); }
+.sidebar-foot { border-top: 1px solid var(--color-sidebar-border); padding: 8px; flex-shrink: 0; }
+.sidebar-foot .sidebar-link { color: var(--color-sidebar-text-soft); }
+.sidebar-foot .sidebar-link:hover { background: var(--color-sidebar-hover); color: var(--color-sidebar-text); }
 
 .main-col { flex: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; min-width: 0; transition: margin-left 0.2s ease; }
 body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); }
@@ -342,7 +313,7 @@ body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); 
 .role-menu-item .r-name { font-size: 13px; font-weight: 600; color: var(--color-text); }
 .role-menu-item .r-desc { font-size: 11.5px; color: var(--color-text-faint); margin-top: 1px; }
 .role-menu-item svg { width: 16px; height: 16px; margin-top: 2px; color: var(--color-text-muted); flex-shrink: 0; }
-.role-menu-item.active svg { color: var(--color-primary-dark); }
+.role-menu-item.active svg { color: var(--color-primary-hover); }
 
 /* ---------- Demo banner ---------- */
 /* Uses the blue info accent, not brand green — it's an informational
@@ -395,7 +366,7 @@ body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); 
 .btn svg { width: 15px; height: 15px; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-primary { background: var(--color-primary); color: #fff; }
-.btn-primary:hover:not(:disabled) { background: var(--color-primary-dark); }
+.btn-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
 .btn-secondary { background: var(--color-surface); border-color: var(--color-border-strong); color: var(--color-text); }
 .btn-secondary:hover:not(:disabled) { background: var(--color-surface-sunken); }
 .btn-ghost { background: none; color: var(--color-text-soft); }
@@ -422,7 +393,7 @@ input[type="number"], input[type="email"], select, textarea {
   font-size: 13.5px; color: var(--color-text); width: 100%; font-family: inherit;
 }
 textarea { height: auto; padding: 10px 12px; min-height: 84px; resize: vertical; }
-input:focus, select:focus, textarea:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; border-color: var(--color-primary); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--color-info); outline-offset: 1px; border-color: var(--color-info); }
 input::placeholder, textarea::placeholder { color: var(--color-text-faint); }
 
 .select-wrap { position: relative; }
@@ -492,21 +463,23 @@ body[data-page="dashboard"] .grid-2 { align-items: start; }
 .badge svg, .badge .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .badge .dot { display: inline-block; }
 
-.badge-neutral { background: var(--color-neutral-bg); color: var(--color-text-soft); }
+/* Every status badge carries a matching 1px border, not just a tinted fill —
+   keeps the quiet, outlined B2B look consistent with cards/inputs. */
+.badge-neutral { background: var(--color-neutral-bg); color: var(--color-text-soft); border: 1px solid var(--color-border-strong); }
 .badge-neutral .dot { background: var(--color-text-faint); }
-.badge-info { background: var(--color-info-bg); color: var(--color-info); }
+.badge-info { background: var(--color-info-bg); color: var(--color-info); border: 1px solid var(--color-info-border); }
 .badge-info .dot { background: var(--color-info); }
-.badge-caution { background: var(--color-caution-bg); color: var(--color-caution); }
+.badge-caution { background: var(--color-caution-bg); color: var(--color-caution); border: 1px solid var(--color-caution-border); }
 .badge-caution .dot { background: var(--color-caution-dot); }
-.badge-risk { background: var(--color-risk-bg); color: var(--color-risk); }
+.badge-risk { background: var(--color-risk-bg); color: var(--color-risk); border: 1px solid var(--color-risk-border); }
 .badge-risk .dot { background: var(--color-risk-dot); }
-.badge-danger { background: var(--color-danger-bg); color: var(--color-danger); }
+.badge-danger { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid var(--color-danger-border); }
 .badge-danger .dot { background: var(--color-danger-dot); }
-.badge-success { background: var(--color-success-bg); color: var(--color-success); }
+.badge-success { background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success-border); }
 .badge-success .dot { background: var(--color-success-dot); }
-.badge-violet { background: var(--color-violet-bg); color: var(--color-violet); }
+.badge-violet { background: var(--color-violet-bg); color: var(--color-violet); border: 1px solid var(--color-violet-border); }
 .badge-violet .dot { background: var(--color-violet); }
-.badge-primary { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.badge-primary { background: var(--color-primary-soft); color: var(--color-primary-hover); border: 1px solid var(--color-primary-soft-border); }
 .badge-primary .dot { background: var(--color-primary); }
 
 .badge-lg { font-size: 12.5px; padding: 5px 12px; }
@@ -597,7 +570,7 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 
 .toast-stack { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
 .toast {
-  background: var(--color-primary-darker); color: #fff; padding: 11px 16px; border-radius: var(--radius-lg);
+  background: var(--color-primary-active); color: #fff; padding: 11px 16px; border-radius: var(--radius-lg);
   font-size: 13px; font-weight: 600; box-shadow: var(--shadow-popover); display: flex; align-items: center; gap: 8px;
   animation: toast-in 0.18s ease;
 }
@@ -642,7 +615,7 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .hr { height: 1px; background: var(--color-border); border: none; margin: 16px 0; }
 .avatar-initials {
   width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--color-primary-soft);
-  color: var(--color-primary-dark); font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: var(--color-primary-hover); font-size: 12.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
 /* ---------- Responsive: desktop / tablet ---------- */
@@ -838,7 +811,7 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .chart-legend .lg-item { display: flex; align-items: center; gap: 6px; }
 .chart-legend .lg-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 .chart-tooltip {
-  position: absolute; background: var(--color-primary-darker); color: #fff; font-size: 11.5px;
+  position: absolute; background: var(--color-primary-active); color: #fff; font-size: 11.5px;
   padding: 7px 10px; border-radius: var(--radius-md); pointer-events: none; z-index: 10; display: none;
   white-space: nowrap; box-shadow: var(--shadow-popover);
 }
@@ -889,5 +862,5 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .step-tracker .step:first-child::before { display: none; }
 .step-tracker .step.done .s-dot { background: var(--color-primary); color: #fff; }
 .step-tracker .step.done::before { background: var(--color-primary); }
-.step-tracker .step.current .s-dot { background: var(--color-primary-soft); color: var(--color-primary-dark); border-color: var(--color-primary); }
+.step-tracker .step.current .s-dot { background: var(--color-primary-soft); color: var(--color-primary-hover); border-color: var(--color-primary); }
 .step-tracker .step.rejected .s-dot { background: var(--color-danger-bg); color: var(--color-danger); border-color: var(--color-danger); }
