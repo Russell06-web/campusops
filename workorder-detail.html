@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>工單詳情 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260805a">
+<link rel="stylesheet" href="css/style.css?v=20260806a">
 </head>
 <body data-page="workorders" data-roles="manager,tech">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -43,7 +43,7 @@
   var wo = workOrders.filter(function (w) { return w.id === id; })[0];
 
   if (!wo) {
-    main.innerHTML = CO.stateBlockHtml("empty", { icon: "workorder", title: "找不到這筆工單", message: id ? ("查無工單編號 " + id + "，可能已被刪除或編號有誤。") : "請從工單管理列表或 GIS 地圖點擊工單標記進入。", actionHtml: '<div class="state-actions"><a class="btn btn-primary" href="workorders.html">回工單列表</a></div>' });
+    main.innerHTML = CO.stateBlockHtml("empty", { icon: "workorder", title: "找不到這筆工單", message: id ? ("查無工單編號 " + id + "，可能已被刪除或編號有誤。") : "請從工單管理列表或校園設施分布圖點擊工單標記進入。", actionHtml: '<div class="state-actions"><a class="btn btn-primary" href="workorders.html">回工單列表</a></div>' });
     return;
   }
 
@@ -79,7 +79,7 @@
   }
 
   function photoBox(has, emoji) {
-    return '<div class="ph-box">' + (has ? emoji : '<span class="text-faint" style="font-size:12px;">尚無照片</span>') + "</div>";
+    return '<div class="ph-box">' + (has ? '<span class="ph-demo-flag">Demo</span>' + emoji : '<span class="text-faint" style="font-size:12px;">尚無照片</span>') + "</div>";
   }
 
   function render() {
@@ -123,7 +123,7 @@
           '<span class="badge badge-neutral badge-lg">優先級：' + wo.priority + "</span>" +
         "</div>" +
       "</div>" +
-      '<div class="page-actions"><a class="btn btn-secondary" href="map.html">' + ico("map") + "在地圖上查看</a></div>" +
+      '<div class="page-actions"><a class="btn btn-secondary" href="map.html">' + ico("map") + "在設施分布圖上查看</a></div>" +
       "</div>" +
 
       '<div class="card mb-16"><div class="card-body">' + stepTrackerHtml() + "</div></div>" +
@@ -143,6 +143,7 @@
           "</div></div>" +
 
           '<div class="card mb-16"><div class="card-header"><h3>問題照片與完工照片</h3></div><div class="card-body">' +
+            '<p class="photo-demo-note">' + ico("alertTriangle") + "以下標示「Demo」的照片為示範用示意圖，非本案實際案發現場影像。</p>" +
             '<div class="grid-2">' +
               '<div><h4 class="text-sm" style="margin-bottom:8px;font-weight:700;">問題照片（巡檢／通報上傳）</h4><div class="photo-compare">' + beforeFigs + "</div></div>" +
               '<div><h4 class="text-sm" style="margin-bottom:8px;font-weight:700;">完工照片（維修後上傳）</h4><div class="photo-compare">' + afterFigs + "</div>" +

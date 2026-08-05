@@ -10,7 +10,7 @@
 
   var NAV_ITEMS = [
     { key: "dashboard", href: "dashboard.html", label: "營運總覽", icon: "dashboard", roles: ["manager"] },
-    { key: "map", href: "map.html", label: "GIS 校園地圖", icon: "map", roles: ["manager", "inspector"] },
+    { key: "map", href: "map.html", label: "校園設施分布圖", icon: "map", roles: ["manager", "inspector"] },
     { key: "inspections", href: "inspections.html", label: "巡檢任務", icon: "clipboard", roles: ["manager", "inspector"] },
     { key: "inspection-form", href: "inspection-form.html", label: "行動巡檢表單", icon: "phone", roles: ["manager", "inspector"] },
     { key: "workorders", href: "workorders.html", label: "工單管理", icon: "workorder", roles: ["manager", "tech"] },
@@ -109,17 +109,44 @@
     );
   }
 
+  var DEMO_MODES = [
+    { state: null, label: "正常畫面", icon: "checkCircle" },
+    { state: "loading", label: "載入中", icon: "clock" },
+    { state: "error", label: "錯誤", icon: "alertOctagon" },
+    { state: "empty", label: "空狀態", icon: "inbox" }
+  ];
+
   function renderDemoBanner() {
     var url = new URL(window.location.href);
-    function stateLink(state, label) {
-      var u = new URL(url.href); u.searchParams.set("demo", state);
-      return '<a href="' + u.pathname + u.search + '">' + label + "</a>";
+    var current = url.searchParams.get("demo");
+    function hrefFor(state) {
+      var u = new URL(url.href);
+      if (state) u.searchParams.set("demo", state); else u.searchParams.delete("demo");
+      return u.pathname + u.search;
     }
-    var clearUrl = new URL(url.href); clearUrl.searchParams.delete("demo");
+    var activeMode = DEMO_MODES.filter(function (m) { return m.state === current; })[0] || DEMO_MODES[0];
+    var itemsHtml = DEMO_MODES.map(function (m) {
+      var isActive = m === activeMode;
+      return (
+        '<a class="role-menu-item' + (isActive ? " active" : "") + '" href="' + hrefFor(m.state) + '">' +
+        ico(m.icon) + '<span><span class="r-name">' + m.label + "</span></span>" +
+        "</a>"
+      );
+    }).join("");
+
     return (
       ico("alertTriangle") +
       '<span class="db-text">Demo 展示環境 — 所有校園、人員與工單資料皆為虛構情境，不代表任何真實學校或機構。</span>' +
-      '<span class="db-tests"><span>測試狀態：</span>' + stateLink("loading", "載入中") + stateLink("error", "錯誤") + stateLink("empty", "空狀態") + '<a href="' + clearUrl.pathname + '">還原</a></span>'
+      '<div class="role-switcher demo-mode-switcher">' +
+        '<button type="button" class="role-chip" data-demo-mode-toggle aria-haspopup="true" aria-expanded="false">' +
+          ico("layers") +
+          '<span class="role-name">展示模式' + (activeMode.state ? "：" + activeMode.label : "") + "</span>" +
+          ico("chevronDown") +
+        "</button>" +
+        '<div class="role-menu" id="demo-mode-menu">' +
+          '<div class="role-menu-label">切換畫面狀態（僅影響檢視，不影響資料）</div>' + itemsHtml +
+        "</div>" +
+      "</div>"
     );
   }
 
@@ -183,11 +210,16 @@
 
       var roleToggle = e.target.closest("[data-role-toggle]");
       var notifToggle = e.target.closest("[data-notification-trigger]");
+      var demoModeToggle = e.target.closest("[data-demo-mode-toggle]");
       var roleMenu = document.getElementById("role-menu");
       var notifMenu = document.getElementById("notif-menu");
-      if (roleToggle) { roleMenu.classList.toggle("open"); notifMenu.classList.remove("open"); }
-      else if (notifToggle) { notifMenu.classList.toggle("open"); roleMenu.classList.remove("open"); }
-      else if (!e.target.closest(".role-menu")) { roleMenu.classList.remove("open"); notifMenu.classList.remove("open"); }
+      var demoModeMenu = document.getElementById("demo-mode-menu");
+      var allMenus = [roleMenu, notifMenu, demoModeMenu];
+      function closeAllExcept(keep) { allMenus.forEach(function (m) { if (m && m !== keep) m.classList.remove("open"); }); }
+      if (roleToggle) { roleMenu.classList.toggle("open"); closeAllExcept(roleMenu); }
+      else if (notifToggle) { notifMenu.classList.toggle("open"); closeAllExcept(notifMenu); }
+      else if (demoModeToggle) { demoModeMenu.classList.toggle("open"); closeAllExcept(demoModeMenu); }
+      else if (!e.target.closest(".role-menu")) { closeAllExcept(null); }
 
       var pick = e.target.closest("[data-role-pick]");
       if (pick) {

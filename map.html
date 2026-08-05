@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GIS 校園地圖 — CampusOps</title>
+<title>校園設施分布圖 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260805a">
+<link rel="stylesheet" href="css/style.css?v=20260806a">
 </head>
 <body data-page="map" data-roles="manager,inspector">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
 <div class="app-shell">
   <div id="sidebar-mount"></div>
   <div class="main-col">
-    <header class="topbar" id="topbar-mount" data-title="GIS 校園地圖" data-breadcrumb="Map"></header>
+    <header class="topbar" id="topbar-mount" data-title="校園設施分布圖" data-breadcrumb="Facility Map"></header>
     <div id="demo-banner-mount" class="demo-banner"></div>
     <main class="page" id="page-main" data-page-content>
       <div class="page-header">
         <div>
-          <div class="page-title">GIS 校園地圖</div>
-          <div class="page-subtitle">點擊地圖上的標記可查看工單摘要，並可進入工單詳情</div>
+          <div class="page-title">校園設施分布圖</div>
+          <div class="page-subtitle">示意用校園配置圖，非真實地理定位；點擊標記可查看工單摘要並進入工單詳情</div>
         </div>
       </div>
       <div id="map-root"></div>
@@ -41,14 +41,23 @@
 
   if (forcedState === "loading") { root.innerHTML = CO.stateBlockHtml("loading"); return; }
   if (forcedState === "error") {
-    root.innerHTML = CO.stateBlockHtml("error", { message: "無法載入 GIS 校園地圖資料，可能是定位服務暫時無回應。" });
+    root.innerHTML = CO.stateBlockHtml("error", { message: "無法載入校園設施分布圖資料，可能是後端服務暫時無回應。" });
     root.querySelector("[data-retry]").addEventListener("click", function () { var u = new URL(location.href); u.searchParams.delete("demo"); location.href = u.pathname; });
     return;
   }
 
   var allOrders = forcedState === "empty" ? [] : D.load("workOrders").filter(function (w) { return w.status !== "done" && w.status !== "rejected"; });
 
-  var state = { building: "all", facility: {}, risk: {} };
+  function floorSortKey(f) {
+    if (/^B/i.test(f)) return -100 + (parseInt(f.replace(/\D/g, ""), 10) || 0) * -1;
+    return parseInt(f, 10) || 0;
+  }
+  var ALL_FLOORS = Array.from(new Set(D.load("workOrders").map(function (w) { return w.floor; }).filter(Boolean)))
+    .sort(function (a, b) { return floorSortKey(a) - floorSortKey(b); });
+
+  var RISK_ORDER = { overdue: 0, high: 1, caution: 2, normal: 3 };
+
+  var state = { building: "all", floor: "all", facility: {}, risk: {} };
   D.FACILITY_TYPES.forEach(function (f) { state.facility[f.id] = true; });
   Object.keys(D.RISK_LEVELS).forEach(function (r) { state.risk[r] = true; });
   var activeMarkerId = null;
@@ -59,6 +68,11 @@
       '<div class="map-filter-group"><h4>建築物</h4>' +
         '<div class="select-wrap"><select id="filter-building"><option value="all">全部建築</option>' +
         D.BUILDINGS.map(function (b) { return '<option value="' + b.id + '">' + b.name + "</option>"; }).join("") +
+        "</select>" + ico("chevronDown") + "</div>" +
+      "</div>" +
+      '<div class="map-filter-group"><h4>樓層</h4>' +
+        '<div class="select-wrap"><select id="filter-floor"><option value="all">全部樓層</option>' +
+        ALL_FLOORS.map(function (f) { return '<option value="' + f + '">' + f + "</option>"; }).join("") +
         "</select>" + ico("chevronDown") + "</div>" +
       "</div>" +
       '<div class="map-filter-group"><h4>設施圖層</h4>' +
@@ -76,15 +90,27 @@
       '<div class="legend-row"><span class="dot-lg" style="background:var(--color-caution-dot);"></span>注意</div>' +
       '<div class="legend-row"><span class="dot-lg" style="background:var(--color-risk-dot);"></span>高風險</div>' +
       '<div class="legend-row"><span class="dot-lg" style="background:var(--color-danger-dot);"></span>逾期（閃爍提示）</div>' +
+      '<div class="legend-row"><span class="dot-lg" style="background:var(--color-text-soft);color:#fff;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;">N</span>聚合標記（縮小檢視時同棟多筆工單會合併，點擊可放大展開）</div>' +
       "</div>" +
     "</div></div>" +
-    '<div class="map-canvas-wrap"><div class="map-canvas" id="map-canvas"><div class="map-popover" id="map-popover"></div></div></div>' +
+    '<div class="map-canvas-wrap" id="map-canvas-wrap">' +
+      '<div class="map-canvas" id="map-canvas"></div>' +
+      '<div class="map-popover" id="map-popover"></div>' +
+      '<div class="map-controls">' +
+        '<button type="button" id="zoom-in" aria-label="放大">' + ico("plus") + "</button>" +
+        '<div class="zoom-level" id="zoom-level">100%</div>' +
+        '<button type="button" id="zoom-out" aria-label="縮小"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></button>' +
+        '<button type="button" id="zoom-reset" aria-label="重置檢視">' + ico("refresh") + "</button>" +
+      "</div>" +
+      '<div class="map-hint">' + ico("navigation") + "<span>拖曳可平移，滾輪或按鈕可縮放</span></div>" +
+    "</div>" +
     '<div class="map-panel"><div class="card-body">' +
       '<h4 style="font-size:12px;font-weight:700;color:var(--color-text-faint);text-transform:uppercase;margin-bottom:10px;">目前顯示的工單（<span id="list-count">0</span>）</h4>' +
       '<div id="map-list"></div>' +
     "</div></div>" +
     "</div>";
 
+  var wrap = document.getElementById("map-canvas-wrap");
   var canvas = document.getElementById("map-canvas");
   var popover = document.getElementById("map-popover");
 
@@ -98,41 +124,123 @@
 
   // y kept >= 0.52 so markers cluster below the building name label (which sits at the top of the box)
   var OFFSETS = [[0.26, 0.55], [0.74, 0.55], [0.26, 0.85], [0.74, 0.85], [0.5, 0.7]];
+  var CLUSTER_ZOOM_THRESHOLD = 1.2;
+  var MIN_ZOOM = 0.6, MAX_ZOOM = 2.4;
+  var view = { zoom: 1, panX: 0, panY: 0 };
 
-  function buildingOrderIndex(w) {
-    return allOrders.filter(function (o) { return o.buildingId === w.buildingId; }).indexOf(w);
+  function applyTransform() {
+    canvas.style.transform = "translate(" + view.panX + "px," + view.panY + "px) scale(" + view.zoom + ")";
+    document.getElementById("zoom-level").textContent = Math.round(view.zoom * 100) + "%";
   }
 
-  function markerEls() { return Array.prototype.slice.call(canvas.querySelectorAll(".map-marker")); }
+  function setZoom(z) {
+    view.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+    applyTransform();
+    renderMarkers();
+  }
+
+  function focusBuilding(b) {
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    var cx = w / 2, cy = h / 2;
+    var bx = ((b.x + b.w / 2) / 100) * w, by = ((b.y + b.h / 2) / 100) * h;
+    var z = Math.max(view.zoom, 1.7);
+    view.panX = (cx - bx) * z;
+    view.panY = (cy - by) * z;
+    view.zoom = z;
+    applyTransform();
+    renderMarkers();
+  }
+
+  function resetView() {
+    view = { zoom: 1, panX: 0, panY: 0 };
+    applyTransform();
+    renderMarkers();
+  }
+
+  document.getElementById("zoom-in").addEventListener("click", function () { setZoom(view.zoom * 1.25); });
+  document.getElementById("zoom-out").addEventListener("click", function () { setZoom(view.zoom / 1.25); });
+  document.getElementById("zoom-reset").addEventListener("click", function () { closePopover(); resetView(); });
+
+  wrap.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    setZoom(view.zoom * (e.deltaY < 0 ? 1.12 : 1 / 1.12));
+  }, { passive: false });
+
+  var dragging = false, dragStart = null, panStart = null, dragMoved = false;
+  wrap.addEventListener("mousedown", function (e) {
+    if (e.target.closest(".map-marker") || e.target.closest(".map-cluster") || e.target.closest(".map-popover") || e.target.closest(".map-controls")) return;
+    dragging = true; dragMoved = false;
+    dragStart = { x: e.clientX, y: e.clientY };
+    panStart = { x: view.panX, y: view.panY };
+    wrap.classList.add("dragging");
+  });
+  window.addEventListener("mousemove", function (e) {
+    if (!dragging) return;
+    var dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+    view.panX = panStart.x + dx; view.panY = panStart.y + dy;
+    applyTransform();
+  });
+  window.addEventListener("mouseup", function () {
+    if (dragging) { dragging = false; wrap.classList.remove("dragging"); }
+  });
+  wrap.addEventListener("click", function (e) {
+    if (dragMoved) { e.stopPropagation(); dragMoved = false; }
+  }, true);
+
+  function buildingOrderIndex(w, list) {
+    return list.filter(function (o) { return o.buildingId === w.buildingId; }).indexOf(w);
+  }
 
   function passesFilter(w) {
     if (state.building !== "all" && w.buildingId !== state.building) return false;
+    if (state.floor !== "all" && w.floor !== state.floor) return false;
     if (!state.facility[w.facilityType]) return false;
     if (!state.risk[w.riskLevel]) return false;
     return true;
   }
 
   function renderMarkers() {
-    markerEls().forEach(function (m) { m.remove(); });
+    canvas.querySelectorAll(".map-marker, .map-cluster").forEach(function (m) { m.remove(); });
     var visible = allOrders.filter(passesFilter);
-    visible.forEach(function (w) {
-      var bld = D.building(w.buildingId);
-      var idx = buildingOrderIndex(w) % OFFSETS.length;
-      var off = OFFSETS[idx];
-      var x = bld.x + bld.w * off[0];
-      var y = bld.y + bld.h * off[1];
-      var risk = D.RISK_LEVELS[w.riskLevel];
-      var fac = D.facility(w.facilityType);
-      var marker = document.createElement("button");
-      marker.type = "button";
-      marker.className = "map-marker " + risk.markerClass;
-      marker.style.left = x + "%"; marker.style.top = y + "%";
-      marker.setAttribute("aria-label", w.title);
-      marker.setAttribute("data-id", w.id);
-      marker.innerHTML = ico(fac.icon);
-      marker.addEventListener("click", function (e) { e.stopPropagation(); openPopover(w, marker); });
-      canvas.appendChild(marker);
+
+    var byBuilding = {};
+    visible.forEach(function (w) { (byBuilding[w.buildingId] = byBuilding[w.buildingId] || []).push(w); });
+
+    Object.keys(byBuilding).forEach(function (bId) {
+      var group = byBuilding[bId];
+      var bld = D.building(bId);
+      if (view.zoom < CLUSTER_ZOOM_THRESHOLD && group.length > 1) {
+        var worst = group.slice().sort(function (a, b) { return RISK_ORDER[a.riskLevel] - RISK_ORDER[b.riskLevel]; })[0];
+        var cluster = document.createElement("button");
+        cluster.type = "button";
+        cluster.className = "map-cluster " + D.RISK_LEVELS[worst.riskLevel].markerClass;
+        cluster.style.left = (bld.x + bld.w * 0.5) + "%"; cluster.style.top = (bld.y + bld.h * 0.68) + "%";
+        cluster.setAttribute("aria-label", bld.name + "，共 " + group.length + " 筆工單，點擊放大展開");
+        cluster.textContent = group.length;
+        cluster.addEventListener("click", function (e) { e.stopPropagation(); if (dragMoved) return; closePopover(); focusBuilding(bld); });
+        canvas.appendChild(cluster);
+      } else {
+        group.forEach(function (w) {
+          var idx = buildingOrderIndex(w, group) % OFFSETS.length;
+          var off = OFFSETS[idx];
+          var x = bld.x + bld.w * off[0];
+          var y = bld.y + bld.h * off[1];
+          var risk = D.RISK_LEVELS[w.riskLevel];
+          var fac = D.facility(w.facilityType);
+          var marker = document.createElement("button");
+          marker.type = "button";
+          marker.className = "map-marker " + risk.markerClass;
+          marker.style.left = x + "%"; marker.style.top = y + "%";
+          marker.setAttribute("aria-label", w.title);
+          marker.setAttribute("data-id", w.id);
+          marker.innerHTML = ico(fac.icon);
+          marker.addEventListener("click", function (e) { e.stopPropagation(); if (dragMoved) return; openPopover(w, marker); });
+          canvas.appendChild(marker);
+        });
+      }
     });
+
     renderList(visible);
   }
 
@@ -149,18 +257,20 @@
       "</div>" +
       '<div class="flex gap-6" style="margin-bottom:10px;"><span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + '</span><span class="badge ' + status.badge + '">' + status.label + "</span></div>" +
       '<a class="btn btn-primary btn-sm btn-block" href="workorder-detail.html?id=' + w.id + '">查看工單詳情</a>';
-    var left = parseFloat(markerEl.style.left), top = parseFloat(markerEl.style.top);
-    var canvasRect = canvas.getBoundingClientRect();
-    var px = (left / 100) * canvasRect.width, py = (top / 100) * canvasRect.height;
+
+    var markerRect = markerEl.getBoundingClientRect();
+    var wrapRect = wrap.getBoundingClientRect();
+    var px = markerRect.left + markerRect.width / 2 - wrapRect.left;
+    var py = markerRect.top + markerRect.height / 2 - wrapRect.top;
     var popW = 268;
-    var maxLeft = canvasRect.width - popW - 10;
+    var maxLeft = wrapRect.width - popW - 10;
     popover.style.left = Math.max(6, Math.min(px + 16, maxLeft)) + "px";
-    popover.style.top = Math.max(6, Math.min(py - 20, canvasRect.height - 220)) + "px";
+    popover.style.top = Math.max(6, Math.min(py - 20, wrapRect.height - 220)) + "px";
     popover.classList.add("open");
   }
   function closePopover() { popover.classList.remove("open"); activeMarkerId = null; }
 
-  canvas.addEventListener("click", function (e) { if (!e.target.closest(".map-marker") && !e.target.closest(".map-popover")) closePopover(); });
+  wrap.addEventListener("click", function (e) { if (!e.target.closest(".map-marker") && !e.target.closest(".map-cluster") && !e.target.closest(".map-popover")) closePopover(); });
   popover.addEventListener("click", function (e) { if (e.target.closest("[data-mp-close]")) closePopover(); });
 
   function renderList(visible) {
@@ -184,24 +294,35 @@
     listMount.querySelectorAll("[data-list-item]").forEach(function (card) {
       card.addEventListener("click", function () {
         var id = card.getAttribute("data-list-item");
-        var marker = canvas.querySelector('.map-marker[data-id="' + id + '"]');
         var w = allOrders.filter(function (o) { return o.id === id; })[0];
-        if (marker && w) openPopover(w, marker);
+        if (!w) return;
+        focusBuilding(D.building(w.buildingId));
+        setTimeout(function () {
+          var marker = canvas.querySelector('.map-marker[data-id="' + id + '"]');
+          if (marker) openPopover(w, marker);
+        }, 140);
       });
     });
   }
 
   function resetFilters() {
-    state.building = "all";
+    state.building = "all"; state.floor = "all";
     D.FACILITY_TYPES.forEach(function (f) { state.facility[f.id] = true; });
     Object.keys(D.RISK_LEVELS).forEach(function (r) { state.risk[r] = true; });
     document.getElementById("filter-building").value = "all";
+    document.getElementById("filter-floor").value = "all";
     root.querySelectorAll("[data-layer], [data-risk]").forEach(function (cb) { cb.checked = true; });
     closePopover();
-    renderMarkers();
+    resetView();
   }
 
-  document.getElementById("filter-building").addEventListener("change", function (e) { state.building = e.target.value; closePopover(); renderMarkers(); });
+  document.getElementById("filter-building").addEventListener("change", function (e) {
+    state.building = e.target.value;
+    closePopover();
+    if (state.building === "all") resetView();
+    else focusBuilding(D.building(state.building));
+  });
+  document.getElementById("filter-floor").addEventListener("change", function (e) { state.floor = e.target.value; closePopover(); renderMarkers(); });
   root.querySelectorAll("[data-layer]").forEach(function (cb) {
     cb.addEventListener("change", function () { state.facility[cb.getAttribute("data-layer")] = cb.checked; closePopover(); renderMarkers(); });
   });
@@ -209,6 +330,7 @@
     cb.addEventListener("change", function () { state.risk[cb.getAttribute("data-risk")] = cb.checked; closePopover(); renderMarkers(); });
   });
 
+  applyTransform();
   renderMarkers();
 })();
 </script>

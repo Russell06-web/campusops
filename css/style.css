@@ -17,7 +17,7 @@
   --color-text: #14201c;
   --color-text-soft: #364440;
   --color-text-muted: #5c6b66;
-  --color-text-faint: #7c8b86;
+  --color-text-faint: #697770;
   --color-text-on-primary: #ffffff;
 
   /* Brand — deep teal-green, the only "loud" color allowed outside status use */
@@ -26,16 +26,24 @@
   --color-primary-darker: #073028;
   --color-primary-soft: #e3efec;
   --color-primary-soft-border: #bfd8d2;
+  /* Text/icon ink for use ON TOP of --color-primary-soft tinted surfaces (demo
+     banner, login note) — a distinct role from --color-primary-darker, which
+     stays a dark BACKGROUND (toasts/tooltips) with white text on it. This one
+     flips to a light tint in dark mode since the soft surface itself goes dark. */
+  --color-primary-soft-ink: #073028;
 
-  /* Status palette — reserved. Red/orange/yellow ONLY for anomaly/risk states. */
+  /* Status palette — reserved. Red/orange/yellow ONLY for anomaly/risk states.
+     Text roles (--color-caution/--color-risk) are tuned to clear WCAG AA
+     4.5:1 against their -bg; the *-dot tokens stay decorative-only (small
+     status dots, never carrying text) and are unchanged. */
   --color-neutral: #5c6b66;
   --color-neutral-bg: #eceeed;
   --color-info: #2a5fd6;
   --color-info-bg: #e9eefc;
-  --color-caution: #a3720b;
+  --color-caution: #8a5f09;
   --color-caution-bg: #fbf1da;
   --color-caution-dot: #eda100;
-  --color-risk: #b5540f;
+  --color-risk: #9c470d;
   --color-risk-bg: #fbe9dd;
   --color-risk-dot: #eb6834;
   --color-danger: #b3261e;
@@ -78,6 +86,7 @@
     --color-primary-darker: #1f6656;
     --color-primary-soft: #1d2b28;
     --color-primary-soft-border: #2c4440;
+    --color-primary-soft-ink: #9fd9c4;
     --color-neutral: #a1aca6;
     --color-neutral-bg: #232b28;
     --color-info: #6f97e8;
@@ -114,6 +123,7 @@
   --color-primary-darker: #1f6656;
   --color-primary-soft: #1d2b28;
   --color-primary-soft-border: #2c4440;
+  --color-primary-soft-ink: #9fd9c4;
   --color-neutral: #a1aca6;
   --color-neutral-bg: #232b28;
   --color-info: #6f97e8;
@@ -310,20 +320,28 @@ body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); 
 .demo-banner {
   background: var(--color-primary-soft);
   border-bottom: 1px solid var(--color-primary-soft-border);
-  color: var(--color-primary-darker);
+  color: var(--color-primary-soft-ink);
   font-size: 12.5px;
   padding: 8px 20px;
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
 }
-.demo-banner svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--color-primary-dark); }
+.demo-banner svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--color-primary-soft-ink); }
 .demo-banner .db-text { flex: 1; min-width: 200px; }
 .demo-banner .db-tests { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.demo-banner .db-tests span { color: var(--color-primary-dark); font-weight: 600; }
+.demo-banner .db-tests span { color: var(--color-primary-soft-ink); font-weight: 600; }
 .demo-banner .db-tests a {
   border: 1px solid var(--color-primary-soft-border); border-radius: var(--radius-sm);
-  padding: 2px 8px; font-size: 11.5px; background: var(--color-surface); color: var(--color-primary-darker);
+  padding: 2px 8px; font-size: 11.5px; background: var(--color-surface); color: var(--color-primary-soft-ink);
 }
 .demo-banner .db-tests a:hover { background: var(--color-primary-soft); }
+.demo-banner .demo-mode-switcher { flex-shrink: 0; }
+.demo-banner .demo-mode-switcher .role-chip {
+  height: 26px; padding: 0 8px; gap: 6px; border-color: var(--color-primary-soft-border);
+  background: var(--color-surface); color: var(--color-primary-soft-ink); font-weight: 600; font-size: 12px;
+}
+.demo-banner .demo-mode-switcher .role-chip svg { width: 14px; height: 14px; }
+.demo-banner .demo-mode-switcher .role-chip:hover { background: var(--color-primary-soft); }
+.demo-banner .demo-mode-switcher .role-menu { right: 0; }
 
 /* ---------- Page layout ---------- */
 
@@ -426,6 +444,11 @@ input::placeholder, textarea::placeholder { color: var(--color-text-faint); }
 .delta-down { color: var(--color-success); }
 
 .grid-2 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; }
+/* Dashboard's two-column rows: size each card to its own content instead of
+   stretching the shorter card (e.g. 設施類型分布) up to match a taller sibling
+   (e.g. 需要立即處理's list) — that stretch was the source of large dead
+   whitespace inside the shorter card. */
+body[data-page="dashboard"] .grid-2 { align-items: start; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 
 /* ---------- Badges / pills ---------- */
@@ -563,7 +586,7 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .login-brand .brand-sub { font-size: 11.5px; color: var(--color-text-faint); }
 .login-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .login-desc { font-size: 13px; color: var(--color-text-muted); margin-bottom: 22px; }
-.login-demo-note { background: var(--color-primary-soft); border: 1px solid var(--color-primary-soft-border); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; color: var(--color-primary-darker); margin-bottom: 18px; display: flex; gap: 8px; }
+.login-demo-note { background: var(--color-primary-soft); border: 1px solid var(--color-primary-soft-border); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; color: var(--color-primary-soft-ink); margin-bottom: 18px; display: flex; gap: 8px; }
 .login-demo-note svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
 .login-foot { text-align: center; font-size: 11.5px; color: var(--color-text-faint); margin-top: 16px; }
 .password-field-wrap { position: relative; }
@@ -703,12 +726,34 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 0; }
 .legend-row .dot-lg { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
-.map-canvas-wrap { position: relative; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); overflow: hidden; }
-.map-canvas { position: relative; width: 100%; height: 100%; background:
+.map-canvas-wrap { position: relative; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-surface); overflow: hidden; cursor: grab; }
+.map-canvas-wrap.dragging { cursor: grabbing; }
+.map-canvas {
+  position: relative; width: 100%; height: 100%; transform-origin: center center;
+  transition: transform 0.12s ease-out;
+  background:
   linear-gradient(var(--color-border) 1px, transparent 1px) 0 0/32px 32px,
   linear-gradient(90deg, var(--color-border) 1px, transparent 1px) 0 0/32px 32px,
   var(--color-surface-sunken);
 }
+.map-canvas-wrap.dragging .map-canvas { transition: none; }
+
+.map-controls { position: absolute; top: 12px; right: 12px; z-index: 20; display: flex; flex-direction: column; gap: 6px; }
+.map-controls button {
+  width: 32px; height: 32px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong);
+  background: var(--color-surface); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: var(--shadow-card); color: var(--color-text-soft);
+}
+.map-controls button:hover { background: var(--color-surface-sunken); }
+.map-controls button svg { width: 16px; height: 16px; }
+.map-controls .zoom-level { font-size: 10.5px; text-align: center; color: var(--color-text-faint); background: var(--color-surface); border-radius: var(--radius-sm); padding: 2px 0; border: 1px solid var(--color-border); }
+
+.map-hint {
+  position: absolute; bottom: 10px; left: 10px; z-index: 20; font-size: 11px; color: var(--color-text-faint);
+  background: var(--color-surface); padding: 4px 9px; border-radius: var(--radius-sm); border: 1px solid var(--color-border);
+  display: flex; align-items: center; gap: 5px;
+}
+.map-hint svg { width: 12px; height: 12px; }
 .map-building {
   position: absolute; background: var(--color-surface); border: 1.5px solid var(--color-border-strong);
   border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
@@ -727,6 +772,17 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .map-marker.risk-high { background: var(--color-risk-dot); }
 .map-marker.risk-overdue { background: var(--color-danger-dot); animation: marker-pulse 1.6s ease infinite; }
 @keyframes marker-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(227,73,72,0.4), 0 1px 4px rgba(0,0,0,0.25); } 50% { box-shadow: 0 0 0 7px rgba(227,73,72,0), 0 1px 4px rgba(0,0,0,0.25); } }
+
+.map-cluster {
+  position: absolute; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transform: translate(-50%, -50%); z-index: 6; color: #fff; font-weight: 800; font-size: 13px;
+}
+.map-cluster.risk-normal { background: var(--color-neutral); }
+.map-cluster.risk-caution { background: var(--color-caution-dot); }
+.map-cluster.risk-high { background: var(--color-risk-dot); }
+.map-cluster.risk-overdue { background: var(--color-danger-dot); }
+.map-cluster:hover { filter: brightness(1.08); }
 
 .map-popover {
   position: absolute; width: 268px; background: var(--color-surface); border: 1px solid var(--color-border);
@@ -776,8 +832,14 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 
 .photo-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .photo-compare figure { margin: 0; }
-.photo-compare .ph-box { aspect-ratio: 4/3; border-radius: var(--radius-md); background: var(--color-surface-sunken); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-size: 42px; overflow: hidden; }
+.photo-compare .ph-box { position: relative; aspect-ratio: 4/3; border-radius: var(--radius-md); background: var(--color-surface-sunken); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-size: 42px; overflow: hidden; }
 .photo-compare figcaption { font-size: 11.5px; color: var(--color-text-faint); margin-top: 5px; text-align: center; font-weight: 600; }
+.ph-demo-flag {
+  position: absolute; top: 6px; left: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+  color: #fff; background: rgba(20, 32, 28, 0.72); padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+}
+.photo-demo-note { font-size: 11.5px; color: var(--color-text-faint); margin-top: -6px; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
+.photo-demo-note svg { width: 13px; height: 13px; flex-shrink: 0; }
 
 /* ---------- Detail two-col layout ---------- */
 
