@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登入 — CampusOps 校園設施巡檢與派工平台</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="login">
+<a class="skip-link" href="#login-form">跳到登入表單</a>
+<div class="login-shell">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg></div>
+      <div><div class="brand-text">CampusOps</div><div class="brand-sub">校園設施巡檢與派工平台</div></div>
+    </div>
+    <h2 class="login-title">登入系統</h2>
+    <p class="login-desc">校園設施 GIS 地圖、行動巡檢、異常通報、工單派發與稽核報表整合平台。</p>
+
+    <div class="login-demo-note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Demo 展示環境：帳密已預填正確值，可直接登入；所有資料皆為虛構，非任何真實學校系統。</span>
+    </div>
+
+    <form id="login-form" novalidate>
+      <div class="field" id="field-account">
+        <label for="account">工號 / 帳號</label>
+        <input type="text" id="account" name="account" value="A12345" autocomplete="username">
+        <span class="error-msg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>工號錯誤，請確認後再試一次</span>
+      </div>
+      <div class="field" id="field-password">
+        <label for="password">密碼</label>
+        <div class="password-field-wrap">
+          <input type="password" id="password" name="password" value="campus2026" autocomplete="current-password">
+          <button type="button" class="password-toggle" id="toggle-password" aria-label="顯示密碼">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <span class="error-msg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>密碼錯誤，請確認後再試一次</span>
+      </div>
+
+      <div class="field">
+        <label>以哪種身分示範登入？</label>
+        <span class="hint">四種角色會看到不同的頁面權限，權限外的頁面會顯示「權限不足」畫面。</span>
+        <div class="segmented" id="role-segmented" role="radiogroup" aria-label="示範身分">
+          <button type="button" data-role="manager" class="active" role="radio" aria-checked="true">總務處管理者</button>
+          <button type="button" data-role="inspector" role="radio" aria-checked="false">巡檢人員</button>
+          <button type="button" data-role="tech" role="radio" aria-checked="false">維修技工／廠商</button>
+          <button type="button" data-role="reporter" role="radio" aria-checked="false">校內通報者</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" id="login-submit">登入</button>
+    </form>
+    <p class="login-foot">© 2026 CampusOps Demo — 僅供介面展示，非真實校園系統</p>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script>
+(function () {
+  "use strict";
+  var VALID_ACCOUNT = "A12345";
+  var VALID_PASSWORD = "campus2026";
+  var LANDING = { manager: "dashboard.html", inspector: "inspections.html", tech: "workorders.html", reporter: "report-issue.html" };
+  var selectedRole = "manager";
+
+  document.getElementById("role-segmented").addEventListener("click", function (e) {
+    var btn = e.target.closest("button[data-role]");
+    if (!btn) return;
+    selectedRole = btn.getAttribute("data-role");
+    document.querySelectorAll("#role-segmented button").forEach(function (b) {
+      var active = b === btn;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-checked", String(active));
+    });
+  });
+
+  document.getElementById("toggle-password").addEventListener("click", function () {
+    var input = document.getElementById("password");
+    var isPw = input.type === "password";
+    input.type = isPw ? "text" : "password";
+    this.setAttribute("aria-label", isPw ? "隱藏密碼" : "顯示密碼");
+    this.innerHTML = isPw
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.1 9.1 0 0 1 12 4c7 0 11 8 11 8a17.6 17.6 0 0 1-2.6 3.8"/><path d="M6.6 6.6C3.5 8.5 1 12 1 12s4 8 11 8a9.7 9.7 0 0 0 5-1.4"/><path d="M9.9 9.9a3 3 0 1 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>';
+  });
+
+  document.getElementById("login-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var account = document.getElementById("account").value.trim();
+    var password = document.getElementById("password").value;
+    var accountField = document.getElementById("field-account");
+    var passwordField = document.getElementById("field-password");
+    accountField.classList.toggle("has-error", account !== VALID_ACCOUNT);
+    passwordField.classList.toggle("has-error", password !== VALID_PASSWORD);
+    if (account !== VALID_ACCOUNT || password !== VALID_PASSWORD) {
+      window.CO.toast("登入失敗，請確認工號與密碼", "error");
+      return;
+    }
+    try {
+      localStorage.setItem("co_session_v1", "1");
+      localStorage.setItem("co_role_v1", selectedRole);
+    } catch (err) { /* ignore */ }
+    window.CO.toast("登入成功，正在導向…", "success");
+    setTimeout(function () { window.location.href = LANDING[selectedRole]; }, 400);
+  });
+})();
+</script>
+</body>
+</html>

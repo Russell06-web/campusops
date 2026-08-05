@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>營運總覽 — CampusOps</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="dashboard" data-roles="manager">
+<a class="skip-link" href="#page-main">跳到主要內容</a>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <div class="main-col">
+    <header class="topbar" id="topbar-mount" data-title="營運總覽" data-breadcrumb="Dashboard"></header>
+    <div id="demo-banner-mount" class="demo-banner"></div>
+    <main class="page" id="page-main" data-page-content>
+      <div class="page-header">
+        <div>
+          <div class="page-title">營運總覽</div>
+          <div class="page-subtitle">今日校園設施異常與工單處理狀況</div>
+        </div>
+        <div class="page-actions">
+          <a class="btn btn-secondary" href="map.html">查看 GIS 校園地圖</a>
+          <a class="btn btn-primary" href="reports.html">前往稽核與報表</a>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="stats-grid"></div>
+
+      <div class="grid-3" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="card-body">
+            <div class="stat-label">SLA 達成率</div>
+            <div class="stat-value" id="sla-rate-value" style="font-size:26px;margin-top:6px;">—</div>
+            <div class="stat-foot mt-8">未逾期完成 ÷ 全部工單</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="stat-label">平均處理時間</div>
+            <div class="stat-value" id="avg-handling-value" style="font-size:26px;margin-top:6px;">—</div>
+            <div class="stat-foot mt-8">建立到完工驗收的平均耗時</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="stat-label">校園建築</div>
+            <div class="stat-value" style="font-size:26px;margin-top:6px;">6 棟</div>
+            <div class="stat-foot mt-8">涵蓋消防／照明／空調／水電／電梯／無障礙 6 大類設施</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-16">
+        <div class="card">
+          <div class="card-header"><h3>近 7 日工單趨勢</h3></div>
+          <div class="card-body" id="trend-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>各建築物異常數量排名</h3><span class="text-faint text-sm">未結案工單</span></div>
+          <div class="card-body" id="building-rank"></div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><h3>設施類型分布</h3></div>
+          <div class="card-body" id="facility-dist"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>需要立即處理</h3><span class="text-faint text-sm">逾期／高風險／待驗收</span></div>
+          <div class="card-body" id="urgent-list"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="sidebar-scrim"></div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/data.js"></script>
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.CO_PAGE_ALLOWED) return;
+
+  var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
+  var main = document.getElementById("page-main");
+  var forcedState = CO.demoStateParam();
+
+  if (forcedState === "loading") {
+    main.innerHTML = CO.stateBlockHtml("loading");
+    return;
+  }
+  if (forcedState === "error") {
+    main.innerHTML = CO.stateBlockHtml("error", { message: "無法取得營運總覽資料，可能是後端服務暫時無回應。" });
+    main.querySelector("[data-retry]").addEventListener("click", function () {
+      var url = new URL(window.location.href); url.searchParams.delete("demo");
+      window.location.href = url.pathname;
+    });
+    return;
+  }
+
+  var workOrders = forcedState === "empty" ? [] : D.load("workOrders");
+  var isOpen = function (w) { return w.status !== "done" && w.status !== "rejected"; };
+  var openCount = workOrders.filter(isOpen).length;
+  var overdueCount = workOrders.filter(function (w) { return w.riskLevel === "overdue"; }).length;
+  var highRiskCount = workOrders.filter(function (w) { return w.riskLevel === "high"; }).length;
+  var doneCount = workOrders.filter(function (w) { return w.status === "done"; }).length;
+  var slaRate = workOrders.length ? Math.round(((workOrders.length - overdueCount) / workOrders.length) * 100) : 0;
+
+  var doneDurations = workOrders.filter(function (w) { return w.status === "done"; }).map(function (w) {
+    var doneEntry = w.history[w.history.length - 1];
+    return (new Date(doneEntry.time) - new Date(w.createdAt)) / 3600000; // hours
+  });
+  var avgHours = doneDurations.length ? (doneDurations.reduce(function (a, b) { return a + b; }, 0) / doneDurations.length) : 0;
+  var avgHandling = avgHours >= 24 ? (avgHours / 24).toFixed(1) + " 天" : Math.round(avgHours) + " 小時";
+
+  // ---------- stat cards ----------
+  document.getElementById("stats-grid").innerHTML = [
+    { tone: "neutral", icon: "workorder", label: "待處理工單", value: openCount, foot: "尚未結案（含待分派／處理中／待驗收）" },
+    { tone: "danger", icon: "alertOctagon", label: "逾期工單", value: overdueCount, foot: "已超過 SLA 期限，需優先處理" },
+    { tone: "risk", icon: "alertTriangle", label: "高風險工單", value: highRiskCount, foot: "涉及安全疑慮，建議加派資源" },
+    { tone: "success", icon: "checkCircle", label: "已完成工單", value: doneCount, foot: "已驗收結案" }
+  ].map(function (s) {
+    return (
+      '<div class="stat-card tone-' + s.tone + '">' +
+      '<div class="stat-top"><span class="stat-label">' + s.label + '</span><span class="stat-icon">' + ico(s.icon) + "</span></div>" +
+      '<div class="stat-value">' + s.value + '</div>' +
+      '<div class="stat-foot">' + s.foot + "</div>" +
+      "</div>"
+    );
+  }).join("");
+
+  document.getElementById("sla-rate-value").textContent = workOrders.length ? slaRate + "%" : "—";
+  document.getElementById("avg-handling-value").textContent = doneDurations.length ? avgHandling : "—";
+
+  // ---------- building ranking ----------
+  var byBuilding = {};
+  D.BUILDINGS.forEach(function (b) { byBuilding[b.id] = 0; });
+  workOrders.filter(isOpen).forEach(function (w) { byBuilding[w.buildingId] = (byBuilding[w.buildingId] || 0) + 1; });
+  var rankRows = D.BUILDINGS.map(function (b) { return { name: b.name, count: byBuilding[b.id] || 0 }; }).sort(function (a, b) { return b.count - a.count; });
+  var maxCount = Math.max.apply(null, rankRows.map(function (r) { return r.count; }).concat([1]));
+
+  var rankMount = document.getElementById("building-rank");
+  if (!workOrders.length) {
+    rankMount.innerHTML = CO.stateBlockHtml("empty", { message: "目前沒有任何工單資料。" });
+  } else {
+    rankMount.innerHTML = rankRows.map(function (r, i) {
+      var pct = Math.round((r.count / maxCount) * 100);
+      return (
+        '<div style="margin-bottom:12px;">' +
+        '<div class="flex justify-between text-sm" style="margin-bottom:5px;"><span style="font-weight:600;">' + (i + 1) + ". " + r.name + '</span><span class="text-muted">' + r.count + ' 件</span></div>' +
+        '<div style="height:8px;border-radius:5px;background:var(--color-surface-sunken);overflow:hidden;"><div style="height:100%;width:' + pct + '%;border-radius:5px;background:#2a78d6;"></div></div>' +
+        "</div>"
+      );
+    }).join("");
+  }
+
+  // ---------- facility type distribution (categorical, fixed order) ----------
+  var facCounts = D.FACILITY_TYPES.map(function (f) {
+    return { id: f.id, name: f.name, swatch: f.swatch, count: workOrders.filter(function (w) { return w.facilityType === f.id; }).length };
+  });
+  var facTotal = facCounts.reduce(function (a, b) { return a + b.count; }, 0) || 1;
+  var facMount = document.getElementById("facility-dist");
+  if (!workOrders.length) {
+    facMount.innerHTML = CO.stateBlockHtml("empty", { message: "目前沒有任何工單資料。" });
+  } else {
+    var barSegments = facCounts.map(function (f) {
+      var pct = (f.count / facTotal) * 100;
+      return pct > 0 ? '<div title="' + f.name + " " + f.count + '筆" style="width:' + pct + '%;background:' + f.swatch + ';height:100%;"></div>' : "";
+    }).join("");
+    var legendItems = facCounts.map(function (f) {
+      return '<div class="lg-item"><span class="lg-swatch" style="background:' + f.swatch + ';"></span>' + f.name + ' <span class="text-faint">(' + f.count + ')</span></div>';
+    }).join("");
+    facMount.innerHTML =
+      '<div style="display:flex;height:22px;border-radius:6px;overflow:hidden;background:var(--color-surface-sunken);">' + barSegments + "</div>" +
+      '<div class="chart-legend">' + legendItems + "</div>";
+  }
+
+  // ---------- 7-day trend (SVG line chart: created vs completed) ----------
+  var days = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+  function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+  var createdSeries = days.map(function (d) { return workOrders.filter(function (w) { return sameDay(new Date(w.createdAt), d); }).length; });
+  var completedSeries = days.map(function (d) {
+    return workOrders.filter(function (w) {
+      if (w.status !== "done") return false;
+      var doneEntry = w.history[w.history.length - 1];
+      return sameDay(new Date(doneEntry.time), d);
+    }).length;
+  });
+
+  var trendMount = document.getElementById("trend-chart");
+  if (!workOrders.length) {
+    trendMount.innerHTML = CO.stateBlockHtml("empty", { message: "目前沒有可繪製的趨勢資料。" });
+  } else {
+    renderTrendChart(trendMount, days, createdSeries, completedSeries);
+  }
+
+  function renderTrendChart(mount, days, s1, s2) {
+    var W = 560, H = 200, padL = 28, padR = 12, padT = 14, padB = 26;
+    var maxVal = Math.max.apply(null, s1.concat(s2).concat([3]));
+    var stepX = (W - padL - padR) / (days.length - 1);
+    function yFor(v) { return padT + (H - padT - padB) * (1 - v / maxVal); }
+    function pathFor(series) {
+      return series.map(function (v, i) { return (i === 0 ? "M" : "L") + (padL + i * stepX) + "," + yFor(v); }).join(" ");
+    }
+    var gridLines = "";
+    var ticks = 4;
+    for (var g = 0; g <= ticks; g++) {
+      var val = Math.round((maxVal / ticks) * g);
+      var y = yFor(val);
+      gridLines += '<line class="chart-grid-line" x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y + '" y2="' + y + '"/>';
+      gridLines += '<text class="chart-axis-label" x="2" y="' + (y + 3) + '">' + val + "</text>";
+    }
+    var xLabels = days.map(function (d, i) {
+      return '<text class="chart-axis-label" x="' + (padL + i * stepX) + '" y="' + (H - 6) + '" text-anchor="middle">' + (d.getMonth() + 1) + "/" + d.getDate() + "</text>";
+    }).join("");
+    var dots1 = s1.map(function (v, i) { return '<circle cx="' + (padL + i * stepX) + '" cy="' + yFor(v) + '" r="3.5" fill="#2a78d6" data-i="' + i + '" data-series="1"/>'; }).join("");
+    var dots2 = s2.map(function (v, i) { return '<circle cx="' + (padL + i * stepX) + '" cy="' + yFor(v) + '" r="3.5" fill="#1baf7a" data-i="' + i + '" data-series="2"/>'; }).join("");
+
+    mount.innerHTML =
+      '<div class="chart-wrap"><svg viewBox="0 0 ' + W + " " + H + '" width="100%" height="200" role="img" aria-label="近 7 日工單建立與完成趨勢">' +
+      gridLines + xLabels +
+      '<path d="' + pathFor(s1) + '" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="' + pathFor(s2) + '" fill="none" stroke="#1baf7a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      dots1 + dots2 +
+      "</svg>" +
+      '<div class="chart-tooltip" id="trend-tooltip"></div>' +
+      '</div>' +
+      '<div class="chart-legend"><div class="lg-item"><span class="lg-swatch" style="background:#2a78d6;"></span>新建立工單</div><div class="lg-item"><span class="lg-swatch" style="background:#1baf7a;"></span>完成結案</div></div>' +
+      '<table class="hidden" id="trend-table"><caption>近 7 日工單建立與完成趨勢（資料表）</caption><thead><tr><th>日期</th><th>新建立</th><th>完成結案</th></tr></thead><tbody>' +
+      days.map(function (d, i) { return "<tr><td>" + (d.getMonth() + 1) + "/" + d.getDate() + "</td><td>" + s1[i] + "</td><td>" + s2[i] + "</td></tr>"; }).join("") +
+      "</tbody></table>";
+
+    var tooltip = document.getElementById("trend-tooltip");
+    mount.querySelectorAll("circle").forEach(function (c) {
+      c.addEventListener("mouseenter", function () {
+        var idx = +c.getAttribute("data-i");
+        var series = c.getAttribute("data-series") === "1" ? "新建立" : "完成結案";
+        var val = c.getAttribute("data-series") === "1" ? s1[idx] : s2[idx];
+        var d = days[idx];
+        tooltip.textContent = (d.getMonth() + 1) + "/" + d.getDate() + " · " + series + " " + val + " 件";
+        tooltip.classList.add("show");
+        var rect = mount.querySelector("svg").getBoundingClientRect();
+        var wrapRect = mount.getBoundingClientRect();
+        var cx = c.cx.baseVal.value / W * rect.width;
+        var cy = c.cy.baseVal.value / H * rect.height;
+        tooltip.style.left = Math.min(cx + 8, wrapRect.width - 140) + "px";
+        tooltip.style.top = Math.max(cy - 34, 0) + "px";
+      });
+      c.addEventListener("mouseleave", function () { tooltip.classList.remove("show"); });
+    });
+  }
+
+  // ---------- immediate action list ----------
+  var urgent = workOrders.filter(function (w) { return w.riskLevel === "overdue" || (w.riskLevel === "high" && w.status !== "done") || w.status === "review" || w.status === "rejected"; })
+    .sort(function (a, b) {
+      var rank = { overdue: 0, high: 1, caution: 2, normal: 3 };
+      return rank[a.riskLevel] - rank[b.riskLevel];
+    }).slice(0, 6);
+
+  var urgentMount = document.getElementById("urgent-list");
+  if (!urgent.length) {
+    urgentMount.innerHTML = CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有需要立即處理的事項", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有逾期與高風險工單皆已妥善處理。" });
+  } else {
+    urgentMount.innerHTML = urgent.map(function (w) {
+      var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
+      return (
+        '<a class="card" style="display:block;padding:12px 14px;margin-bottom:10px;" href="workorder-detail.html?id=' + w.id + '">' +
+        '<div class="flex justify-between items-center gap-8" style="margin-bottom:6px;">' +
+        '<span class="cell-primary">' + w.title + "</span>" +
+        '<span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + "</span>" +
+        "</div>" +
+        '<div class="text-sm text-muted">' + w.buildingName + " " + w.floor + " · " + w.location + "</div>" +
+        '<div class="flex justify-between items-center" style="margin-top:8px;"><span class="badge ' + status.badge + '">' + status.label + '</span><span class="text-faint text-sm">SLA ' + D.fmtDate(w.slaDueAt) + "</span></div>" +
+        "</a>"
+      );
+    }).join("");
+  }
+})();
+</script>
+</body>
+</html>

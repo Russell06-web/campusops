@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>問題通報 — CampusOps</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="report-issue" data-roles="manager,reporter">
+<a class="skip-link" href="#page-main">跳到主要內容</a>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <div class="main-col">
+    <header class="topbar" id="topbar-mount" data-title="問題通報" data-breadcrumb="Report Issue"></header>
+    <div id="demo-banner-mount" class="demo-banner"></div>
+    <main class="page" id="page-main" data-page-content>
+      <div class="page-header">
+        <div>
+          <div class="page-title">問題通報</div>
+          <div class="page-subtitle">回報教室、廁所、空調、照明或無障礙設施等問題，送出後將自動建立工單</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" id="form-card">
+          <div class="card-header"><h3>填寫通報內容</h3></div>
+          <div class="card-body" id="form-body"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>近期通報紀錄（示範資料）</h3></div>
+          <div class="card-body" id="recent-list"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div class="sidebar-scrim"></div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/data.js"></script>
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.CO_PAGE_ALLOWED) return;
+  var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
+  var forcedState = CO.demoStateParam();
+  var formBody = document.getElementById("form-body");
+  var recentMount = document.getElementById("recent-list");
+  var photos = [null, null, null];
+
+  if (forcedState === "loading") {
+    formBody.innerHTML = CO.stateBlockHtml("loading");
+    recentMount.innerHTML = CO.stateBlockHtml("loading");
+    return;
+  }
+
+  function renderRecent() {
+    var reports = D.load("workOrders").filter(function (w) { return w.source === "report"; }).slice(0, 8);
+    if (forcedState === "empty" || !reports.length) {
+      recentMount.innerHTML = CO.stateBlockHtml("empty", { message: "目前沒有通報紀錄。" });
+      return;
+    }
+    recentMount.innerHTML = reports.map(function (w) {
+      var status = D.STATUS_META[w.status];
+      return (
+        '<div class="card" style="padding:12px 14px;margin-bottom:10px;">' +
+        '<div class="flex justify-between items-center gap-8"><span class="cell-primary text-sm">' + w.title + '</span><span class="badge ' + status.badge + '">' + status.label + "</span></div>" +
+        '<div class="text-faint text-sm mt-8">' + w.buildingName + " " + w.floor + " " + w.location + " · " + (w.reporterName || "匿名通報") + "</div>" +
+        "</div>"
+      );
+    }).join("");
+  }
+
+  function renderForm() {
+    formBody.innerHTML =
+      '<div class="field"><label for="rep-building">建築物</label><div class="select-wrap"><select id="rep-building">' +
+        D.BUILDINGS.map(function (b) { return '<option value="' + b.id + '">' + b.name + "</option>"; }).join("") +
+      "</select>" + ico("chevronDown") + "</div></div>" +
+      '<div class="field"><label for="rep-location">樓層 / 位置</label><input type="text" id="rep-location" placeholder="例如：3F 301 教室、1F 男廁"></div>' +
+      '<div class="field"><label for="rep-type">問題類型</label><div class="select-wrap"><select id="rep-type">' +
+        D.FACILITY_TYPES.map(function (f) { return '<option value="' + f.id + '">' + f.name + "</option>"; }).join("") +
+      "</select>" + ico("chevronDown") + "</div></div>" +
+      '<div class="field"><label for="rep-desc">問題描述</label><textarea id="rep-desc" placeholder="請描述看到的狀況，例如：燈具閃爍、地板積水、扶手鬆動…"></textarea>' +
+        '<span class="error-msg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" width="13" height="13"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>請填寫問題描述</span></div>' +
+      '<div class="field"><label>現場照片（選填）</label><div class="photo-grid" id="report-photo-grid" style="max-width:280px;"></div><input type="file" accept="image/*" capture="environment" id="report-photo-input" class="hidden"></div>' +
+      '<div class="field"><label for="rep-name">聯絡姓名（選填）</label><input type="text" id="rep-name" placeholder="例如：王同學"></div>' +
+      '<button type="button" class="btn btn-primary btn-block" id="btn-submit-report">' + ico("send") + "送出通報</button>";
+
+    renderPhotoGrid();
+    document.getElementById("btn-submit-report").addEventListener("click", submitReport);
+  }
+
+  function renderPhotoGrid() {
+    var grid = document.getElementById("report-photo-grid");
+    grid.innerHTML = photos.map(function (p, i) {
+      if (p) return '<div class="photo-slot filled" style="background-image:url(' + p + ');background-size:cover;background-position:center;"><button type="button" class="rm-btn" data-rm="' + i + '">' + ico("x") + "</button></div>";
+      return '<div class="photo-slot" data-add="' + i + '">' + ico("camera") + "<span>新增照片</span></div>";
+    }).join("");
+    grid.querySelectorAll("[data-add]").forEach(function (slot) {
+      slot.addEventListener("click", function () {
+        document.getElementById("report-photo-input").setAttribute("data-target", slot.getAttribute("data-add"));
+        document.getElementById("report-photo-input").click();
+      });
+    });
+    grid.querySelectorAll("[data-rm]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) { e.stopPropagation(); photos[+btn.getAttribute("data-rm")] = null; renderPhotoGrid(); });
+    });
+  }
+  function bindPhotoInput() {
+    var input = document.getElementById("report-photo-input");
+    if (!input) return;
+    input.addEventListener("change", function (e) {
+      var file = e.target.files[0];
+      var slot = +input.getAttribute("data-target");
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (evt) { photos[slot] = evt.target.result; renderPhotoGrid(); };
+      reader.readAsDataURL(file);
+      input.value = "";
+    });
+  }
+
+  function submitReport() {
+    var descField = document.getElementById("rep-desc");
+    var desc = descField.value.trim();
+    var fieldWrap = descField.closest(".field");
+    fieldWrap.classList.toggle("has-error", !desc);
+    if (!desc) { CO.toast("請填寫問題描述", "error"); return; }
+
+    if (forcedState === "error") {
+      formBody.innerHTML = CO.stateBlockHtml("error", { message: "通報送出失敗，伺服器暫時無法回應，請稍後再試一次。" });
+      var retry = formBody.querySelector("[data-retry]");
+      if (retry) retry.addEventListener("click", function () { var u = new URL(location.href); u.searchParams.delete("demo"); location.href = u.pathname; });
+      return;
+    }
+
+    var buildingId = document.getElementById("rep-building").value;
+    var bld = D.building(buildingId);
+    var facilityType = document.getElementById("rep-type").value;
+    var fac = D.facility(facilityType);
+    var location = document.getElementById("rep-location").value.trim() || "（未填寫詳細位置）";
+    var reporterName = document.getElementById("rep-name").value.trim() || "校內師生（匿名）";
+
+    var workOrders = D.load("workOrders");
+    var newId = D.nextWorkOrderId();
+    workOrders.push({
+      id: newId,
+      title: fac.name + "問題通報：" + desc.slice(0, 16),
+      description: desc,
+      buildingId: buildingId, buildingName: bld.name, floor: "", location: location,
+      facilityType: facilityType, facilityLabel: fac.name,
+      source: "report", sourceLabel: "通報", reporterName: reporterName,
+      riskLevel: "caution", status: "pending", priority: "中",
+      assignee: "", assigneeOrg: "",
+      createdAt: new Date().toISOString(), slaDueAt: D.daysFromNow(3, 18, 0),
+      photosBefore: photos.filter(Boolean).length, photosAfter: 0,
+      history: [{ time: new Date().toISOString(), actor: reporterName, action: "建立工單", note: "由校內通報建立" }]
+    });
+    D.set("workOrders", workOrders);
+
+    formBody.innerHTML =
+      '<div class="m-success-screen" style="padding:32px 8px;">' +
+      '<div class="m-success-icon">' + ico("checkCircle") + "</div>" +
+      "<h3>通報已送出</h3>" +
+      '<p class="text-muted">已建立工單 <strong>' + newId + '</strong>，總務處管理者將盡快安排派工，感謝您的通報！</p>' +
+      '<button type="button" class="btn btn-primary btn-block" id="btn-report-again">再通報一筆</button>' +
+      "</div>";
+    document.getElementById("btn-report-again").addEventListener("click", function () { photos = [null, null, null]; renderForm(); bindPhotoInput(); });
+    CO.toast("通報已送出", "success");
+    renderRecent();
+  }
+
+  renderForm();
+  bindPhotoInput();
+  renderRecent();
+})();
+</script>
+</body>
+</html>

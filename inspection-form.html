@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行動巡檢表單 — CampusOps</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="inspection-form" style="background:var(--color-surface-sunken);">
+<div class="mobile-shell" id="mobile-root"></div>
+
+<script src="js/main.js"></script>
+<script src="js/data.js"></script>
+<script>
+(function () {
+  "use strict";
+  var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
+  var root = document.getElementById("mobile-root");
+
+  // Session + role gate (lightweight — this page uses its own mobile chrome, not js/shell.js)
+  var hasSession = false;
+  try { hasSession = localStorage.getItem("co_session_v1") === "1"; } catch (e) { /* ignore */ }
+  if (!hasSession) { window.location.href = "index.html"; return; }
+  var role = (function () { try { return localStorage.getItem("co_role_v1") || "manager"; } catch (e) { return "manager"; } })();
+
+  function mobileTopbar(title) {
+    return (
+      '<div class="mobile-topbar">' +
+      '<a class="m-back" href="inspections.html">' + ico("chevronLeft") + "</a>" +
+      '<div class="m-title">' + title + "</div>" +
+      '<a class="m-back" href="dashboard.html" title="返回桌面版" style="font-size:10px;">' + ico("home") + "</a>" +
+      "</div>"
+    );
+  }
+
+  if (["manager", "inspector"].indexOf(role) === -1) {
+    root.innerHTML = mobileTopbar("行動巡檢表單") + '<div class="mobile-body">' + CO.stateBlockHtml("denied", { message: "目前示範身分為「" + role + "」，沒有行動巡檢表單的填寫權限。請從桌面版右上角切換為「巡檢人員」或「總務處管理者」。", fallbackHref: "dashboard.html" }) + "</div>";
+    return;
+  }
+
+  var forcedState = CO.demoStateParam();
+  if (forcedState === "loading") {
+    root.innerHTML = mobileTopbar("行動巡檢表單") + '<div class="mobile-body">' + CO.stateBlockHtml("loading") + "</div>";
+    return;
+  }
+  if (forcedState === "error") {
+    root.innerHTML = mobileTopbar("行動巡檢表單") + '<div class="mobile-body">' + CO.stateBlockHtml("error", { message: "無法載入設備資訊，請檢查行動網路連線。" }) + "</div>";
+    root.querySelector("[data-retry]").addEventListener("click", function () { var u = new URL(location.href); u.searchParams.delete("demo"); location.href = u.pathname; });
+    return;
+  }
+
+  // ---------- resolve which equipment / task this form targets ----------
+  var params = new URLSearchParams(window.location.search);
+  var taskId = params.get("task");
+  var equipmentId = params.get("equipment");
+  var equipmentList = D.load("equipment");
+  var tasks = D.load("inspectionTasks");
+  var task = taskId ? tasks.filter(function (t) { return t.id === taskId; })[0] : null;
+  var equipment = null;
+  if (equipmentId) equipment = equipmentList.filter(function (e) { return e.id === equipmentId; })[0];
+  if (!equipment && task) {
+    equipment = equipmentList.filter(function (e) { return e.buildingId === task.buildingId && e.facilityType === task.facilityType; })[0];
+  }
+  if (!equipment) equipment = equipmentList[0];
+
+  var judgement = null; // 'normal' | 'abnormal'
+  var checklist = { appearance: null, function: null, label: null, safety: null };
+  var photos = [null, null, null];
+  var geo = null;
+  var offlineForced = params.get("offline") === "1";
+
+  function render() {
+    root.innerHTML =
+      mobileTopbar("行動巡檢表單") +
+      '<div class="offline-strip" id="offline-strip">' + ico("wifiOff") + '<span>目前離線 — 資料將暫存於裝置，恢復連線後自動上傳</span></div>' +
+      '<div class="mobile-body">' +
+
+      '<div class="m-card">' +
+        '<h4>' + ico("building") + "設備資訊</h4>" +
+        '<div class="m-equipment-row"><span class="k">設備編號</span><span class="v">' + equipment.id + "</span></div>" +
+        '<div class="m-equipment-row"><span class="k">設備名稱</span><span class="v">' + equipment.name + "</span></div>" +
+        '<div class="m-equipment-row"><span class="k">位置</span><span class="v">' + equipment.buildingName + " " + equipment.floor + " " + equipment.location + "</span></div>" +
+        '<div class="m-equipment-row"><span class="k">設施類型</span><span class="v">' + D.facility(equipment.facilityType).name + "</span></div>" +
+        '<div class="m-equipment-row"><span class="k">最近巡檢</span><span class="v">' + D.fmtDate(equipment.lastInspectedAt) + " · " + equipment.lastInspector + "</span></div>" +
+        '<div class="m-equipment-row"><span class="k">上次結果</span><span class="v">' + (equipment.lastResult === "abnormal" ? '<span class="badge badge-risk"><span class="dot"></span>異常</span>' : '<span class="badge badge-success"><span class="dot"></span>正常</span>') + "</span></div>" +
+        '<button type="button" class="btn btn-ghost btn-sm btn-block mt-12" id="btn-rescan">' + ico("search") + "模擬掃描其他設備 QR Code</button>" +
+      "</div>" +
+
+      '<div class="m-card">' +
+        '<h4>' + ico("checkSquare") + "正常／異常判定</h4>" +
+        '<div class="judge-toggle">' +
+          '<button type="button" class="judge-btn normal" data-judge="normal">' + ico("checkCircle") + "正常</button>" +
+          '<button type="button" class="judge-btn abnormal" data-judge="abnormal">' + ico("alertTriangle") + "異常</button>" +
+        "</div>" +
+      "</div>" +
+
+      '<div class="m-card">' +
+        '<h4>' + ico("clipboard") + "檢查項目</h4>" +
+        checklistRow("appearance", "外觀是否完整") +
+        checklistRow("function", "功能是否正常運作") +
+        checklistRow("label", "標示／告示是否清楚") +
+        checklistRow("safety", "安全防護是否到位") +
+      "</div>" +
+
+      '<div class="m-card" id="wo-card" style="display:none;">' +
+        '<h4>' + ico("workorder") + "建立工單</h4>" +
+        '<p class="text-sm text-muted mb-8">已偵測到異常，將自動建立工單並依下列風險等級派工。</p>' +
+        '<div class="field" style="margin-bottom:0;"><label for="risk-select">風險等級</label>' +
+        '<div class="select-wrap"><select id="risk-select"><option value="caution">注意</option><option value="high">高風險</option><option value="overdue">逾期（安全疑慮，需立即處理）</option></select>' + ico("chevronDown") + "</div></div>" +
+      "</div>" +
+
+      '<div class="m-card">' +
+        '<h4>' + ico("fileText") + "備註</h4>" +
+        '<textarea id="note-input" placeholder="請描述現場狀況、異常原因或處理建議…"></textarea>' +
+      "</div>" +
+
+      '<div class="m-card">' +
+        '<h4>' + ico("camera") + "現場照片</h4>" +
+        '<div class="photo-grid" id="photo-grid"></div>' +
+        '<input type="file" accept="image/*" capture="environment" id="photo-input" class="hidden">' +
+      "</div>" +
+
+      '<div class="m-card">' +
+        '<h4>' + ico("mapPin") + "定位資訊</h4>" +
+        '<div class="geo-chip" id="geo-chip">' + ico("mapPin") + "<span>定位擷取中…</span></div>" +
+      "</div>" +
+
+      "</div>" +
+
+      '<div class="mobile-bottom-bar">' +
+      '<button type="button" class="btn btn-secondary" id="btn-draft">' + ico("save") + "暫存</button>" +
+      '<button type="button" class="btn btn-primary" id="btn-submit">' + ico("send") + "送出</button>" +
+      "</div>" +
+
+      '<div class="modal-backdrop" id="submit-confirm-modal"><div class="modal">' +
+      "<h3>確認送出巡檢紀錄？</h3>" +
+      '<p id="submit-summary"></p>' +
+      '<div class="modal-actions"><button type="button" class="btn btn-ghost" data-modal-close>再檢查一下</button><button type="button" class="btn btn-primary" id="confirm-submit-btn">確認送出</button></div>' +
+      "</div></div>";
+
+    bindEvents();
+    renderPhotoGrid();
+    updateOfflineStrip();
+    resolveGeo();
+    restoreDraft();
+  }
+
+  function checklistRow(key, label) {
+    return (
+      '<div class="check-item"><span class="ci-label">' + label + '</span>' +
+      '<div class="mini-toggle" data-check="' + key + '">' +
+      '<button type="button" data-val="on">是</button><button type="button" data-val="off">否</button>' +
+      "</div></div>"
+    );
+  }
+
+  function renderPhotoGrid() {
+    var grid = document.getElementById("photo-grid");
+    if (!grid) return;
+    grid.innerHTML = photos.map(function (p, i) {
+      if (p) return '<div class="photo-slot filled" data-slot="' + i + '" style="background-image:url(' + p + ');background-size:cover;background-position:center;"><button type="button" class="rm-btn" data-remove-photo="' + i + '">' + ico("x") + "</button></div>";
+      return '<div class="photo-slot" data-slot="' + i + '">' + ico("camera") + "<span>新增照片</span></div>";
+    }).join("");
+    grid.querySelectorAll(".photo-slot").forEach(function (slot) {
+      slot.addEventListener("click", function (e) {
+        if (e.target.closest("[data-remove-photo]")) return;
+        document.getElementById("photo-input").setAttribute("data-target-slot", slot.getAttribute("data-slot"));
+        document.getElementById("photo-input").click();
+      });
+    });
+    grid.querySelectorAll("[data-remove-photo]").forEach(function (btn) {
+      btn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        photos[+btn.getAttribute("data-remove-photo")] = null;
+        renderPhotoGrid();
+      });
+    });
+  }
+
+  function updateOfflineStrip() {
+    var strip = document.getElementById("offline-strip");
+    var offline = offlineForced || !navigator.onLine;
+    if (strip) strip.classList.toggle("show", offline);
+  }
+  window.addEventListener("online", updateOfflineStrip);
+  window.addEventListener("offline", updateOfflineStrip);
+
+  function resolveGeo() {
+    var chip = document.getElementById("geo-chip");
+    if (!chip) return;
+    if (!navigator.geolocation) {
+      chip.querySelector("span").textContent = "裝置不支援定位，已使用 " + equipment.buildingName + " 預設座標";
+      geo = { fallback: true };
+      return;
+    }
+    var timeoutId = setTimeout(function () {
+      chip.querySelector("span").textContent = "定位逾時，已使用 " + equipment.buildingName + " 預設座標";
+      geo = { fallback: true };
+    }, 4000);
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      clearTimeout(timeoutId);
+      geo = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      chip.querySelector("span").textContent = "已定位：" + pos.coords.latitude.toFixed(5) + ", " + pos.coords.longitude.toFixed(5);
+    }, function () {
+      clearTimeout(timeoutId);
+      chip.querySelector("span").textContent = "無法取得定位權限，已使用 " + equipment.buildingName + " 預設座標";
+      geo = { fallback: true };
+    }, { timeout: 3800 });
+  }
+
+  function bindEvents() {
+    root.querySelectorAll("[data-judge]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        judgement = btn.getAttribute("data-judge");
+        root.querySelectorAll(".judge-btn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-judge") === judgement); });
+        document.getElementById("wo-card").style.display = judgement === "abnormal" ? "block" : "none";
+      });
+    });
+    root.querySelectorAll("[data-check]").forEach(function (group) {
+      group.querySelectorAll("button").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          var key = group.getAttribute("data-check");
+          checklist[key] = btn.getAttribute("data-val");
+          group.querySelectorAll("button").forEach(function (b) { b.classList.remove("on-active", "off-active"); });
+          btn.classList.add(btn.getAttribute("data-val") === "on" ? "on-active" : "off-active");
+        });
+      });
+    });
+    var rescanBtn = document.getElementById("btn-rescan");
+    if (rescanBtn) rescanBtn.addEventListener("click", function () {
+      var idx = equipmentList.indexOf(equipment);
+      equipment = equipmentList[(idx + 1) % equipmentList.length];
+      CO.toast("已模擬掃描：" + equipment.id);
+      photos = [null, null, null]; judgement = null; checklist = { appearance: null, function: null, label: null, safety: null };
+      render();
+    });
+    var photoInput = document.getElementById("photo-input");
+    if (photoInput) photoInput.addEventListener("change", function (e) {
+      var file = e.target.files[0];
+      var slot = +document.getElementById("photo-input").getAttribute("data-target-slot");
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (evt) { photos[slot] = evt.target.result; renderPhotoGrid(); };
+      reader.readAsDataURL(file);
+      photoInput.value = "";
+    });
+
+    document.getElementById("btn-draft").addEventListener("click", saveDraft);
+    document.getElementById("btn-submit").addEventListener("click", openSubmitConfirm);
+    document.getElementById("confirm-submit-btn").addEventListener("click", doSubmit);
+  }
+
+  var DRAFT_KEY = "co_inspection_draft_v1_" + equipment.id;
+  function saveDraft(silent) {
+    var draft = { judgement: judgement, checklist: checklist, note: document.getElementById("note-input").value, photos: photos, ts: Date.now() };
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch (e) { /* ignore */ }
+    if (!silent) CO.toast("已暫存本次巡檢紀錄", "success");
+  }
+  function restoreDraft() {
+    var raw = null;
+    try { raw = localStorage.getItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+    if (!raw) return;
+    try {
+      var draft = JSON.parse(raw);
+      if (draft.judgement) { document.querySelector('[data-judge="' + draft.judgement + '"]').click(); }
+      Object.keys(draft.checklist || {}).forEach(function (k) {
+        if (draft.checklist[k]) document.querySelector('[data-check="' + k + '"] [data-val="' + draft.checklist[k] + '"]').click();
+      });
+      if (draft.note) document.getElementById("note-input").value = draft.note;
+      if (draft.photos) { photos = draft.photos; renderPhotoGrid(); }
+    } catch (e) { /* ignore corrupt draft */ }
+  }
+
+  function openSubmitConfirm() {
+    if (!judgement) { CO.toast("請先完成正常／異常判定", "error"); return; }
+    var summary = judgement === "normal" ? "本次巡檢結果為「正常」，將更新設備最近巡檢紀錄。" : "本次巡檢發現異常，將建立一筆新工單並通知總務處管理者派工。";
+    document.getElementById("submit-summary").textContent = summary;
+    CO.openModal("submit-confirm-modal");
+  }
+
+  function doSubmit() {
+    CO.closeTopModal();
+    var offline = offlineForced || !navigator.onLine;
+    if (offline) {
+      saveDraft(true);
+      CO.toast("目前離線，紀錄已加入待上傳佇列", "error");
+      return;
+    }
+
+    var equipmentAll = D.load("equipment");
+    equipmentAll.forEach(function (e) {
+      if (e.id === equipment.id) {
+        e.lastInspectedAt = new Date().toISOString();
+        e.lastInspector = D.STAFF.inspectors[0].name;
+        e.lastResult = judgement;
+        e.lastNote = document.getElementById("note-input").value || (judgement === "abnormal" ? "巡檢發現異常" : "");
+      }
+    });
+    D.set("equipment", equipmentAll);
+
+    var newWorkOrderId = null;
+    if (judgement === "abnormal") {
+      var risk = document.getElementById("risk-select").value;
+      var workOrders = D.load("workOrders");
+      newWorkOrderId = D.nextWorkOrderId();
+      workOrders.push({
+        id: newWorkOrderId,
+        title: equipment.name + " 巡檢發現異常",
+        description: document.getElementById("note-input").value || "行動巡檢表單回報異常，詳細狀況請見附件照片。",
+        buildingId: equipment.buildingId, buildingName: equipment.buildingName, floor: equipment.floor, location: equipment.location,
+        facilityType: equipment.facilityType, facilityLabel: D.facility(equipment.facilityType).name,
+        source: "inspection", sourceLabel: "例行巡檢", reporterName: null,
+        riskLevel: risk, status: "pending", priority: risk === "overdue" ? "高" : risk === "high" ? "高" : "中",
+        assignee: "", assigneeOrg: "",
+        createdAt: new Date().toISOString(), slaDueAt: D.daysFromNow(risk === "overdue" ? 0 : risk === "high" ? 1 : 3, 18, 0),
+        photosBefore: photos.filter(Boolean).length, photosAfter: 0,
+        history: [{ time: new Date().toISOString(), actor: D.STAFF.inspectors[0].name, action: "建立工單", note: "行動巡檢表單回報異常，自動建立工單" }]
+      });
+      D.set("workOrders", workOrders);
+    }
+
+    if (taskId) {
+      var taskList = D.load("inspectionTasks");
+      taskList.forEach(function (t) { if (t.id === taskId) { t.status = judgement === "abnormal" ? "found" : "normal"; if (newWorkOrderId) t.workOrderId = newWorkOrderId; } });
+      D.set("inspectionTasks", taskList);
+    }
+
+    try { localStorage.removeItem(DRAFT_KEY); } catch (e) { /* ignore */ }
+    showSuccess(newWorkOrderId);
+  }
+
+  function showSuccess(workOrderId) {
+    root.innerHTML =
+      mobileTopbar("送出成功") +
+      '<div class="m-success-screen">' +
+      '<div class="m-success-icon">' + ico("checkCircle") + "</div>" +
+      "<h3>巡檢紀錄已送出</h3>" +
+      '<p class="text-muted">' + equipment.name + " · " + equipment.buildingName + " " + equipment.floor + (workOrderId ? "，已建立工單 " + workOrderId : "，已更新為正常") + "。</p>" +
+      (workOrderId ? '<a class="btn btn-primary btn-block" href="workorder-detail.html?id=' + workOrderId + '">查看新建立的工單</a>' : "") +
+      '<a class="btn btn-secondary btn-block mt-12" href="inspections.html">返回巡檢任務列表</a>' +
+      "</div>";
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

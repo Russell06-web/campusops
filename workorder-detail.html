@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工單詳情 — CampusOps</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="workorders" data-roles="manager,tech">
+<a class="skip-link" href="#page-main">跳到主要內容</a>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <div class="main-col">
+    <header class="topbar" id="topbar-mount" data-title="工單詳情" data-breadcrumb="Work Orders / Detail"></header>
+    <div id="demo-banner-mount" class="demo-banner"></div>
+    <main class="page" id="page-main" data-page-content></main>
+  </div>
+  <div class="sidebar-scrim"></div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/data.js"></script>
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.CO_PAGE_ALLOWED) return;
+  var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
+  var main = document.getElementById("page-main");
+  var forcedState = CO.demoStateParam();
+  var role = window.CO_SHELL.currentRole();
+
+  if (forcedState === "loading") { main.innerHTML = CO.stateBlockHtml("loading"); return; }
+  if (forcedState === "error") {
+    main.innerHTML = CO.stateBlockHtml("error", { message: "無法載入工單詳情，可能是網路連線不穩定。" });
+    main.querySelector("[data-retry]").addEventListener("click", function () { var u = new URL(location.href); u.searchParams.delete("demo"); location.href = u.pathname; });
+    return;
+  }
+
+  var id = new URLSearchParams(window.location.search).get("id");
+  var workOrders = D.load("workOrders");
+  var wo = workOrders.filter(function (w) { return w.id === id; })[0];
+
+  if (!wo) {
+    main.innerHTML = CO.stateBlockHtml("empty", { icon: "workorder", title: "找不到這筆工單", message: id ? ("查無工單編號 " + id + "，可能已被刪除或編號有誤。") : "請從工單管理列表或 GIS 地圖點擊工單標記進入。", actionHtml: '<div class="state-actions"><a class="btn btn-primary" href="workorders.html">回工單列表</a></div>' });
+    return;
+  }
+
+  var techName = D.STAFF.technicians[0].name;
+  if (role === "tech" && wo.assignee !== techName) {
+    main.innerHTML = '<div class="state-permission-page">' + CO.stateBlockHtml("denied", { message: "這筆工單並未指派給你（" + techName + "），因此無法檢視細節。" }) + "</div>";
+    return;
+  }
+
+  var afterPhotosLocal = [];
+
+  function riskOptionsHtml(selected) {
+    return Object.keys(D.RISK_LEVELS).map(function (k) { return '<option value="' + k + '"' + (k === selected ? " selected" : "") + '>' + D.RISK_LEVELS[k].label + "</option>"; }).join("");
+  }
+  function assigneeOptionsHtml(selected) {
+    return D.allAssignees().map(function (p) { return '<option value="' + p.name + '"' + (p.name === selected ? " selected" : "") + '>' + p.name + "（" + p.org + "）</option>"; }).join("");
+  }
+
+  function stepTrackerHtml() {
+    var steps = ["pending", "assigned", "inprogress", "review", "done"];
+    var labels = { pending: "待分派", assigned: "已指派", inprogress: "處理中", review: "待驗收", done: "已完成" };
+    var currentStep = D.STATUS_META[wo.status].step;
+    if (wo.status === "rejected") {
+      return '<div class="step-tracker">' + steps.map(function (s, i) {
+        return '<div class="step ' + (i <= 1 ? "done" : i === 2 ? "rejected" : "") + '"><div class="s-dot">' + (i <= 1 ? "✓" : i === 2 ? "!" : i + 1) + '</div><div class="s-label">' + labels[s] + "</div></div>";
+      }).join("") + "</div><p class='text-sm' style='color:var(--color-danger);text-align:center;margin-top:2px;'>此工單已被退回，需重新處理</p>";
+    }
+    return '<div class="step-tracker">' + steps.map(function (s, i) {
+      var isDone = i < currentStep || wo.status === "done";
+      var cls = isDone ? "done" : i === currentStep ? "current" : "";
+      return '<div class="step ' + cls + '"><div class="s-dot">' + (isDone ? "✓" : i + 1) + '</div><div class="s-label">' + labels[s] + "</div></div>";
+    }).join("") + "</div>";
+  }
+
+  function photoBox(has, emoji) {
+    return '<div class="ph-box">' + (has ? emoji : '<span class="text-faint" style="font-size:12px;">尚無照片</span>') + "</div>";
+  }
+
+  function render() {
+    var risk = D.RISK_LEVELS[wo.riskLevel], status = D.STATUS_META[wo.status];
+
+    var beforeFigs = "";
+    for (var i = 0; i < Math.max(wo.photosBefore, 1); i++) {
+      beforeFigs += '<figure>' + photoBox(i < wo.photosBefore, "📷") + '<figcaption>問題照片 ' + (i + 1) + "</figcaption></figure>";
+    }
+    var afterCount = wo.photosAfter + afterPhotosLocal.length;
+    var afterFigs = "";
+    for (var j = 0; j < Math.max(afterCount, 1); j++) {
+      var localPhoto = afterPhotosLocal[j - wo.photosAfter];
+      var content = j < wo.photosAfter ? "✅" : (localPhoto ? '<img src="' + localPhoto + '" style="width:100%;height:100%;object-fit:cover;">' : "");
+      afterFigs += '<figure>' + photoBox(j < afterCount, content) + '<figcaption>完工照片 ' + (j + 1) + "</figcaption></figure>";
+    }
+
+    var historyHtml = wo.history.slice().reverse().map(function (h, i, arr) {
+      return (
+        '<div class="timeline-item"><div class="t-dot-col"><div class="t-dot"></div>' + (i < arr.length - 1 ? '<div class="t-line"></div>' : "") + "</div>" +
+        '<div class="t-content"><div class="t-action">' + h.action + '</div><div class="t-meta">' + h.actor + " · " + D.fmtDateTime(h.time) + "</div>" +
+        (h.note ? '<div class="t-note">' + h.note + "</div>" : "") +
+        "</div></div>"
+      );
+    }).join("");
+
+    var canDispatch = role === "manager" && wo.status !== "done";
+    var canStart = wo.status === "assigned" && (role === "manager" || role === "tech");
+    var canFinishReview = wo.status === "inprogress" && (role === "manager" || role === "tech");
+    var canAccept = wo.status === "review" && role === "manager";
+    var canReject = wo.status === "review" && role === "manager";
+    var canReassignAfterReject = wo.status === "rejected" && role === "manager";
+
+    main.innerHTML =
+      '<div class="page-header"><div>' +
+        '<div class="breadcrumb text-faint text-sm mb-8"><a href="workorders.html">工單管理</a> / ' + wo.id + "</div>" +
+        '<div class="page-title">' + wo.title + "</div>" +
+        '<div class="flex gap-8 mt-8">' +
+          '<span class="badge ' + risk.badge + ' badge-lg"><span class="dot"></span>' + risk.label + "</span>" +
+          '<span class="badge ' + status.badge + ' badge-lg">' + status.label + "</span>" +
+          '<span class="badge badge-neutral badge-lg">優先級：' + wo.priority + "</span>" +
+        "</div>" +
+      "</div>" +
+      '<div class="page-actions"><a class="btn btn-secondary" href="map.html">' + ico("map") + "在地圖上查看</a></div>" +
+      "</div>" +
+
+      '<div class="card mb-16"><div class="card-body">' + stepTrackerHtml() + "</div></div>" +
+
+      '<div class="detail-layout">' +
+        '<div>' +
+          '<div class="card mb-16"><div class="card-header"><h3>工單資訊</h3></div><div class="card-body">' +
+            '<div class="kv-grid mb-16">' +
+              '<div class="kv-item"><div class="k">建築物 / 位置</div><div class="v">' + wo.buildingName + " " + wo.floor + " " + wo.location + "</div></div>" +
+              '<div class="kv-item"><div class="k">設施類型</div><div class="v">' + wo.facilityLabel + "</div></div>" +
+              '<div class="kv-item"><div class="k">通報來源</div><div class="v">' + wo.sourceLabel + (wo.reporterName ? "（" + wo.reporterName + "）" : "") + "</div></div>" +
+              '<div class="kv-item"><div class="k">建立時間</div><div class="v">' + D.fmtDateTime(wo.createdAt) + "</div></div>" +
+              '<div class="kv-item"><div class="k">SLA 期限</div><div class="v">' + D.fmtDate(wo.slaDueAt) + "</div></div>" +
+              '<div class="kv-item"><div class="k">目前負責人</div><div class="v">' + (wo.assignee ? wo.assignee + "（" + wo.assigneeOrg + "）" : "尚未指派") + "</div></div>" +
+            "</div>" +
+            '<p style="margin-bottom:0;">' + wo.description + "</p>" +
+          "</div></div>" +
+
+          '<div class="card mb-16"><div class="card-header"><h3>問題照片與完工照片</h3></div><div class="card-body">' +
+            '<div class="grid-2">' +
+              '<div><h4 class="text-sm" style="margin-bottom:8px;font-weight:700;">問題照片（巡檢／通報上傳）</h4><div class="photo-compare">' + beforeFigs + "</div></div>" +
+              '<div><h4 class="text-sm" style="margin-bottom:8px;font-weight:700;">完工照片（維修後上傳）</h4><div class="photo-compare">' + afterFigs + "</div>" +
+              (canFinishReview || (role === "tech" && wo.status === "inprogress") ? '<button type="button" class="btn btn-secondary btn-sm mt-12" id="btn-add-after-photo">' + ico("camera") + "新增完工照片</button><input type=\"file\" accept=\"image/*\" capture=\"environment\" id=\"after-photo-input\" class=\"hidden\">" : "") +
+              "</div>" +
+            "</div>" +
+          "</div></div>" +
+
+          '<div class="card"><div class="card-header"><h3>操作歷程</h3></div><div class="card-body"><div class="timeline">' + historyHtml + "</div></div></div>" +
+        "</div>" +
+
+        '<div>' +
+          '<div class="card mb-16"><div class="card-header"><h3>派工設定</h3></div><div class="card-body">' +
+            (canDispatch ? (
+              '<div class="field"><label for="assignee-select">負責人 / 廠商</label><div class="select-wrap"><select id="assignee-select">' + assigneeOptionsHtml(wo.assignee) + "</select>" + ico("chevronDown") + "</div></div>" +
+              '<div class="field"><label for="priority-select">優先級</label><div class="select-wrap"><select id="priority-select"><option value="高"' + (wo.priority === "高" ? " selected" : "") + '>高</option><option value="中"' + (wo.priority === "中" ? " selected" : "") + '>中</option><option value="低"' + (wo.priority === "低" ? " selected" : "") + '>低</option></select>' + ico("chevronDown") + "</div></div>" +
+              '<div class="field"><label for="due-input">處理期限</label><input type="date" id="due-input" value="' + wo.slaDueAt.slice(0, 10) + '"></div>' +
+              '<button type="button" class="btn btn-primary btn-block" id="btn-dispatch">' + ico(wo.status === "pending" ? "send" : "refresh") + (wo.status === "pending" ? "指派工單" : "重新派工") + "</button>"
+            ) : '<p class="text-sm text-muted" style="margin-bottom:0;">目前身分無法調整派工設定，僅總務處管理者可指派或改派工單。</p>') +
+          "</div></div>" +
+
+          '<div class="card"><div class="card-header"><h3>狀態操作</h3></div><div class="card-body flex flex-col gap-10">' +
+            (canStart ? '<button type="button" class="btn btn-primary btn-block" id="btn-start">' + ico("wrench") + "開始處理</button>" : "") +
+            (canFinishReview ? '<button type="button" class="btn btn-primary btn-block" id="btn-to-review">' + ico("send") + "完工，送出驗收</button>" : "") +
+            (canAccept ? '<button type="button" class="btn btn-primary btn-block" id="btn-accept">' + ico("checkCircle") + "驗收通過</button>" : "") +
+            (canReject ? '<button type="button" class="btn btn-danger btn-block" id="btn-reject">' + ico("xCircle") + "退回重工</button>" : "") +
+            (canReassignAfterReject ? '<button type="button" class="btn btn-primary btn-block" id="btn-reassign">' + ico("refresh") + "重新指派處理</button>" : "") +
+            (!canStart && !canFinishReview && !canAccept && !canReject && !canReassignAfterReject ? '<p class="text-sm text-muted" style="margin-bottom:0;">目前狀態或身分無需要處理的操作。</p>' : "") +
+          "</div></div>" +
+        "</div>" +
+      "</div>" +
+
+      '<div class="modal-backdrop" id="reject-modal"><div class="modal">' +
+        "<h3>退回原因</h3>" +
+        '<div class="field"><label for="reject-note">請說明退回原因</label><textarea id="reject-note" placeholder="例如：完工照片無法確認問題已排除，需再次確認…"></textarea></div>' +
+        '<div class="modal-actions"><button type="button" class="btn btn-ghost" data-modal-close>取消</button><button type="button" class="btn btn-danger" id="confirm-reject-btn">確認退回</button></div>' +
+      "</div></div>";
+
+    bindActions();
+  }
+
+  function pushHistory(action, note) {
+    wo.history.push({ time: new Date().toISOString(), actor: role === "manager" ? D.STAFF.manager.name : wo.assignee, action: action, note: note || "" });
+  }
+  function persist() {
+    var all = D.load("workOrders");
+    var idx = all.findIndex(function (w) { return w.id === wo.id; });
+    all[idx] = wo;
+    D.set("workOrders", all);
+  }
+
+  function bindActions() {
+    var dispatchBtn = document.getElementById("btn-dispatch");
+    if (dispatchBtn) dispatchBtn.addEventListener("click", function () {
+      var wasPending = wo.status === "pending";
+      wo.assignee = document.getElementById("assignee-select").value;
+      wo.assigneeOrg = D.findAssignee(wo.assignee).org;
+      wo.priority = document.getElementById("priority-select").value;
+      wo.slaDueAt = new Date(document.getElementById("due-input").value + "T18:00:00").toISOString();
+      if (wasPending) wo.status = "assigned";
+      pushHistory(wasPending ? "指派工單" : "重新派工", "指派給 " + wo.assignee + "（" + wo.assigneeOrg + "），期限 " + D.fmtDate(wo.slaDueAt));
+      persist();
+      CO.toast("派工設定已更新", "success");
+      render();
+    });
+
+    var startBtn = document.getElementById("btn-start");
+    if (startBtn) startBtn.addEventListener("click", function () {
+      wo.status = "inprogress";
+      pushHistory("開始處理", "已抵達現場確認狀況並開始維修");
+      persist(); CO.toast("已更新為處理中", "success"); render();
+    });
+
+    var addAfterPhotoBtn = document.getElementById("btn-add-after-photo");
+    var afterPhotoInput = document.getElementById("after-photo-input");
+    if (addAfterPhotoBtn) addAfterPhotoBtn.addEventListener("click", function () { afterPhotoInput.click(); });
+    if (afterPhotoInput) afterPhotoInput.addEventListener("change", function (e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (evt) { afterPhotosLocal.push(evt.target.result); CO.toast("完工照片已上傳", "success"); render(); };
+      reader.readAsDataURL(file);
+    });
+
+    var toReviewBtn = document.getElementById("btn-to-review");
+    if (toReviewBtn) toReviewBtn.addEventListener("click", function () {
+      if (wo.photosAfter + afterPhotosLocal.length < 1) { CO.toast("請至少上傳 1 張完工照片再送出驗收", "error"); return; }
+      wo.status = "review";
+      wo.photosAfter += afterPhotosLocal.length; afterPhotosLocal = [];
+      pushHistory("完成維修並送審", "已上傳完工照片，等待管理者驗收");
+      persist(); CO.toast("已送出驗收", "success"); render();
+    });
+
+    var acceptBtn = document.getElementById("btn-accept");
+    if (acceptBtn) acceptBtn.addEventListener("click", function () {
+      wo.status = "done";
+      pushHistory("驗收通過", "現場複核完工品質，予以結案");
+      persist(); CO.toast("工單已驗收結案", "success"); render();
+    });
+
+    var rejectBtn = document.getElementById("btn-reject");
+    if (rejectBtn) rejectBtn.addEventListener("click", function () { CO.openModal("reject-modal"); });
+    var confirmRejectBtn = document.getElementById("confirm-reject-btn");
+    if (confirmRejectBtn) confirmRejectBtn.addEventListener("click", function () {
+      var note = document.getElementById("reject-note").value.trim();
+      if (!note) { CO.toast("請填寫退回原因", "error"); return; }
+      wo.status = "rejected";
+      pushHistory("退回", note);
+      persist(); CO.closeTopModal(); CO.toast("工單已退回", "error"); render();
+    });
+
+    var reassignBtn = document.getElementById("btn-reassign");
+    if (reassignBtn) reassignBtn.addEventListener("click", function () {
+      wo.status = "assigned";
+      pushHistory("重新指派處理", "退回原因已處理完畢，重新安排維修");
+      persist(); CO.toast("已重新指派", "success"); render();
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>巡檢任務 — CampusOps</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="inspections" data-roles="manager,inspector">
+<a class="skip-link" href="#page-main">跳到主要內容</a>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <div class="main-col">
+    <header class="topbar" id="topbar-mount" data-title="巡檢任務" data-breadcrumb="Inspections"></header>
+    <div id="demo-banner-mount" class="demo-banner"></div>
+    <main class="page" id="page-main" data-page-content>
+      <div class="page-header">
+        <div>
+          <div class="page-title">巡檢任務</div>
+          <div class="page-subtitle">今日巡檢路線、任務進度與截止時間</div>
+        </div>
+        <div class="page-actions">
+          <a class="btn btn-primary" href="inspection-form.html">開始行動巡檢</a>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="progress-stats"></div>
+
+      <div class="card">
+        <div class="table-toolbar">
+          <div class="table-search"><span id="search-icon-mount"></span><input type="search" id="search-input" placeholder="搜尋位置、建築物或巡檢人員…"></div>
+          <div class="table-filters">
+            <div class="select-wrap"><select id="filter-building"><option value="all">全部建築</option></select></div>
+            <div class="select-wrap"><select id="filter-type"><option value="all">全部類型</option></select></div>
+            <div class="select-wrap"><select id="filter-status">
+              <option value="all">全部狀態</option>
+              <option value="normal">正常</option>
+              <option value="found">發現異常</option>
+              <option value="notyet">尚未巡檢</option>
+              <option value="overdue">逾期</option>
+            </select></div>
+          </div>
+        </div>
+        <div id="table-mount"></div>
+      </div>
+    </main>
+  </div>
+  <div class="sidebar-scrim"></div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/data.js"></script>
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.CO_PAGE_ALLOWED) return;
+  var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
+  var forcedState = CO.demoStateParam();
+
+  document.getElementById("search-icon-mount").innerHTML = ico("search");
+
+  var buildingSelect = document.getElementById("filter-building");
+  D.BUILDINGS.forEach(function (b) { buildingSelect.insertAdjacentHTML("beforeend", '<option value="' + b.id + '">' + b.name + "</option>"); });
+  var typeSelect = document.getElementById("filter-type");
+  D.FACILITY_TYPES.forEach(function (f) { typeSelect.insertAdjacentHTML("beforeend", '<option value="' + f.id + '">' + f.name + "</option>"); });
+
+  var STATUS_LABEL = { normal: "正常", found: "發現異常", notyet: "尚未巡檢", overdue: "逾期" };
+  var STATUS_BADGE = { normal: "badge-success", found: "badge-risk", notyet: "badge-neutral", overdue: "badge-danger" };
+
+  var tasks = forcedState === "empty" ? [] : D.load("inspectionTasks");
+
+  var counts = { normal: 0, found: 0, notyet: 0, overdue: 0 };
+  tasks.forEach(function (t) { counts[t.status]++; });
+  document.getElementById("progress-stats").innerHTML = [
+    { tone: "success", icon: "checkCircle", label: "已完成（正常）", value: counts.normal },
+    { tone: "risk", icon: "alertTriangle", label: "發現異常", value: counts.found },
+    { tone: "neutral", icon: "clock", label: "尚未巡檢", value: counts.notyet },
+    { tone: "danger", icon: "alertOctagon", label: "逾期未巡檢", value: counts.overdue }
+  ].map(function (s) {
+    return '<div class="stat-card tone-' + s.tone + '"><div class="stat-top"><span class="stat-label">' + s.label + '</span><span class="stat-icon">' + ico(s.icon) + '</span></div><div class="stat-value">' + s.value + "</div></div>";
+  }).join("");
+
+  var mount = document.getElementById("table-mount");
+
+  if (forcedState === "loading") { mount.innerHTML = CO.stateBlockHtml("loading"); return; }
+  if (forcedState === "error") {
+    mount.innerHTML = CO.stateBlockHtml("error", { message: "無法載入今日巡檢任務，請稍後再試。" });
+    mount.querySelector("[data-retry]").addEventListener("click", function () { var u = new URL(location.href); u.searchParams.delete("demo"); location.href = u.pathname; });
+    return;
+  }
+
+  var table = new CO.TableController({
+    data: tasks,
+    mount: mount,
+    pageSize: 8,
+    searchKeys: ["location", "buildingName", "inspector"],
+    defaultSort: "scheduledAt",
+    defaultSortDir: "asc",
+    emptyOpts: { message: "沒有符合條件的巡檢任務，試著調整篩選條件。" },
+    columns: [
+      { key: "scheduledAt", label: "時間", sortable: true },
+      { key: "inspector", label: "巡檢人員", sortable: true },
+      { key: "buildingName", label: "建築物 / 位置", sortable: true },
+      { key: "facilityLabel", label: "類型", sortable: false },
+      { key: "status", label: "狀態", sortable: true },
+      { key: "actions", label: "", sortable: false }
+    ],
+    renderRow: function (t) {
+      var actionHtml = t.status === "found" && t.workOrderId
+        ? '<a class="btn btn-sm btn-secondary" href="workorder-detail.html?id=' + t.workOrderId + '">查看工單</a>'
+        : '<a class="btn btn-sm btn-primary" href="inspection-form.html?task=' + t.id + '">填寫巡檢表</a>';
+      return (
+        '<tr>' +
+        '<td data-label="時間">' + D.fmtTime(t.scheduledAt) + "</td>" +
+        '<td data-label="巡檢人員"><span class="cell-primary">' + t.inspector + "</span></td>" +
+        '<td data-label="建築物 / 位置">' + t.buildingName + " " + t.floor + '<div class="cell-muted">' + t.location + "</div></td>" +
+        '<td data-label="類型">' + t.facilityLabel + "</td>" +
+        '<td data-label="狀態"><span class="badge ' + STATUS_BADGE[t.status] + '"><span class="dot"></span>' + STATUS_LABEL[t.status] + "</span></td>" +
+        '<td data-label="操作">' + actionHtml + "</td>" +
+        "</tr>"
+      );
+    }
+  });
+  table.render();
+
+  document.getElementById("search-input").addEventListener("input", function (e) { table.setSearch(e.target.value); });
+  document.getElementById("filter-building").addEventListener("change", function (e) { table.setFilter("buildingId", e.target.value); });
+  document.getElementById("filter-type").addEventListener("change", function (e) { table.setFilter("facilityType", e.target.value); });
+  document.getElementById("filter-status").addEventListener("change", function (e) { table.setFilter("status", e.target.value); });
+
+  window.__coResetFilterUI = function () {
+    document.getElementById("search-input").value = "";
+    document.getElementById("filter-building").value = "all";
+    document.getElementById("filter-type").value = "all";
+    document.getElementById("filter-status").value = "all";
+  };
+})();
+</script>
+</body>
+</html>

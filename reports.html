@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>稽核與報表 — CampusOps</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css?v=20260805a">
+</head>
+<body data-page="reports" data-roles="manager">
+<a class="skip-link" href="#page-main">跳到主要內容</a>
+<div class="app-shell">
+  <div id="sidebar-mount"></div>
+  <div class="main-col">
+    <header class="topbar" id="topbar-mount" data-title="稽核與報表" data-breadcrumb="Reports"></header>
+    <div id="demo-banner-mount" class="demo-banner"></div>
+    <main class="page" id="page-main" data-page-content>
+      <div class="page-header">
+        <div>
+          <div class="page-title">稽核與報表</div>
+          <div class="page-subtitle">巡檢完成率、逾期率、重複故障與 SLA 統計，並可匯出稽核紀錄</div>
+        </div>
+        <div class="page-actions">
+          <button type="button" class="btn btn-secondary" id="btn-export-csv"></button>
+          <button type="button" class="btn btn-secondary" id="btn-export-gov"></button>
+          <button type="button" class="btn btn-primary" id="btn-export-pdf"></button>
+        </div>
+      </div>
+
+      <div class="card mb-16">
+        <div class="table-toolbar" style="flex-wrap:wrap;">
+          <div class="table-filters" style="flex-wrap:wrap;">
+            <label class="text-sm text-muted" style="display:flex;align-items:center;gap:6px;">起始日期 <input type="date" id="filter-from" style="height:34px;width:auto;"></label>
+            <label class="text-sm text-muted" style="display:flex;align-items:center;gap:6px;">結束日期 <input type="date" id="filter-to" style="height:34px;width:auto;"></label>
+            <div class="select-wrap"><select id="filter-building"><option value="all">全部建築</option></select></div>
+            <div class="select-wrap"><select id="filter-type"><option value="all">全部類型</option></select></div>
+            <div class="select-wrap"><select id="filter-assignee"><option value="all">全部承包商／負責人</option></select></div>
+            <div class="select-wrap"><select id="filter-status"><option value="all">全部狀態</option><option value="pending">待分派</option><option value="assigned">已指派</option><option value="inprogress">處理中</option><option value="review">待驗收</option><option value="done">已完成</option><option value="rejected">退回</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="audit-stats"></div>
+
+      <div class="card">
+        <div class="card-header"><h3>稽核紀錄明細</h3><span class="text-faint text-sm">每筆紀錄保留建立時間、操作人員與證明照片數量</span></div>
+        <div id="table-mount"></div>
+      </div>
+    </main>
+  </div>
+  <div class="sidebar-scrim"></div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/data.js"></script>
+<script src="js/shell.js"></script>
+<script>
+(function () {
+  "use strict";
+  if (!window.CO_PAGE_ALLOWED) return;
+  var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
+  document.getElementById("btn-export-csv").innerHTML = ico("download") + "匯出 CSV";
+  document.getElementById("btn-export-gov").innerHTML = ico("fileText") + "匯出政府稽核格式";
+  document.getElementById("btn-export-pdf").innerHTML = ico("download") + "匯出 PDF";
+
+  var forcedState = CO.demoStateParam();
+
+  var buildingSelect = document.getElementById("filter-building");
+  D.BUILDINGS.forEach(function (b) { buildingSelect.insertAdjacentHTML("beforeend", '<option value="' + b.id + '">' + b.name + "</option>"); });
+  var typeSelect = document.getElementById("filter-type");
+  D.FACILITY_TYPES.forEach(function (f) { typeSelect.insertAdjacentHTML("beforeend", '<option value="' + f.id + '">' + f.name + "</option>"); });
+  var assigneeSelect = document.getElementById("filter-assignee");
+  D.allAssignees().forEach(function (p) { assigneeSelect.insertAdjacentHTML("beforeend", '<option value="' + p.name + '">' + p.name + "</option>"); });
+
+  var inspectionTasks = D.load("inspectionTasks");
+  var allOrders = forcedState === "empty" ? [] : D.load("workOrders");
+
+  function computeStats(list) {
+    var total = list.length || 1;
+    var overdue = list.filter(function (w) { return w.riskLevel === "overdue"; }).length;
+    var slaRate = Math.round(((list.length - overdue) / total) * 100);
+    var overdueRate = Math.round((overdue / total) * 100);
+    var groups = {};
+    list.forEach(function (w) { var k = w.buildingId + "|" + w.facilityType; groups[k] = (groups[k] || 0) + 1; });
+    var repeatGroups = Object.keys(groups).filter(function (k) { return groups[k] >= 2; }).length;
+    var doneInspections = inspectionTasks.filter(function (t) { return t.status === "normal" || t.status === "found"; }).length;
+    var inspectionRate = inspectionTasks.length ? Math.round((doneInspections / inspectionTasks.length) * 100) : 0;
+    return { slaRate: slaRate, overdueRate: overdueRate, repeatGroups: repeatGroups, inspectionRate: inspectionRate };
+  }
+
+  var mount = document.getElementById("table-mount");
+  if (forcedState === "loading") {
+    document.getElementById("audit-stats").innerHTML = "";
+    mount.innerHTML = CO.stateBlockHtml("loading");
+    return;
+  }
+  if (forcedState === "error") {
+    mount.innerHTML = CO.stateBlockHtml("error", { message: "無法載入稽核報表資料，請稍後再試。" });
+    mount.querySelector("[data-retry]").addEventListener("click", function () { var u = new URL(location.href); u.searchParams.delete("demo"); location.href = u.pathname; });
+    return;
+  }
+
+  function renderStats(list) {
+    var s = computeStats(list);
+    document.getElementById("audit-stats").innerHTML = [
+      { tone: "success", icon: "clipboard", label: "巡檢完成率", value: s.inspectionRate + "%", foot: "今日已完成／全部排定巡檢任務" },
+      { tone: "danger", icon: "alertOctagon", label: "逾期率", value: s.overdueRate + "%", foot: "逾期工單／篩選結果總數" },
+      { tone: "risk", icon: "refresh", label: "重複故障", value: s.repeatGroups + " 處", foot: "同建築物同設施類型於期間內發生 2 次以上" },
+      { tone: "neutral", icon: "checkCircle", label: "SLA 達成率", value: s.slaRate + "%", foot: "未逾期／篩選結果總數" }
+    ].map(function (c) {
+      return '<div class="stat-card tone-' + c.tone + '"><div class="stat-top"><span class="stat-label">' + c.label + '</span><span class="stat-icon">' + ico(c.icon) + '</span></div><div class="stat-value">' + c.value + '</div><div class="stat-foot">' + c.foot + "</div></div>";
+    }).join("");
+  }
+
+  var table = new CO.TableController({
+    data: allOrders,
+    mount: mount,
+    pageSize: 8,
+    searchKeys: ["id", "title"],
+    defaultSort: "createdAt",
+    emptyOpts: { message: "沒有符合篩選條件的稽核紀錄。" },
+    rowClick: function (id) { window.location.href = "workorder-detail.html?id=" + id; },
+    columns: [
+      { key: "id", label: "工單編號", sortable: true },
+      { key: "buildingName", label: "建築物 / 位置", sortable: true },
+      { key: "facilityLabel", label: "類型", sortable: false },
+      { key: "assignee", label: "承包商 / 負責人", sortable: true },
+      { key: "status", label: "狀態", sortable: true },
+      { key: "createdAt", label: "建立時間", sortable: true },
+      { key: "lastUpdate", label: "最後操作", sortable: false },
+      { key: "proof", label: "證明照片", sortable: false }
+    ],
+    renderRow: function (w) {
+      var status = D.STATUS_META[w.status];
+      var last = w.history[w.history.length - 1];
+      return (
+        '<tr class="row-link" data-row-id="' + w.id + '">' +
+        '<td data-label="工單編號"><span class="cell-mono">' + w.id + "</span></td>" +
+        '<td data-label="建築物 / 位置">' + w.buildingName + " " + w.floor + '<div class="cell-muted">' + w.location + "</div></td>" +
+        '<td data-label="類型">' + w.facilityLabel + "</td>" +
+        '<td data-label="承包商 / 負責人">' + (w.assignee || "—") + "</td>" +
+        '<td data-label="狀態"><span class="badge ' + status.badge + '">' + status.label + "</span></td>" +
+        '<td data-label="建立時間" class="cell-muted">' + D.fmtDateTime(w.createdAt) + "</td>" +
+        '<td data-label="最後操作" class="cell-muted">' + last.actor + " · " + D.fmtDateTime(last.time) + "</td>" +
+        '<td data-label="證明照片">前 ' + w.photosBefore + " ／ 後 " + w.photosAfter + "</td>" +
+        "</tr>"
+      );
+    }
+  });
+
+  function applyFilters() {
+    var filtered = allOrders.filter(function (w) {
+      var from = document.getElementById("filter-from").value;
+      var to = document.getElementById("filter-to").value;
+      if (from && w.createdAt.slice(0, 10) < from) return false;
+      if (to && w.createdAt.slice(0, 10) > to) return false;
+      return true;
+    });
+    table.data = filtered;
+    table.state.page = 1;
+    renderStats(filtered);
+    table.render();
+  }
+
+  document.getElementById("filter-building").addEventListener("change", function (e) { table.setFilter("buildingId", e.target.value); applyFiltersStats(); });
+  document.getElementById("filter-type").addEventListener("change", function (e) { table.setFilter("facilityType", e.target.value); applyFiltersStats(); });
+  document.getElementById("filter-assignee").addEventListener("change", function (e) { table.setFilter("assignee", e.target.value); applyFiltersStats(); });
+  document.getElementById("filter-status").addEventListener("change", function (e) { table.setFilter("status", e.target.value); applyFiltersStats(); });
+  document.getElementById("filter-from").addEventListener("change", applyFilters);
+  document.getElementById("filter-to").addEventListener("change", applyFilters);
+  function applyFiltersStats() { renderStats(table.getFiltered()); }
+
+  window.__coResetFilterUI = function () {
+    ["filter-building", "filter-type", "filter-assignee", "filter-status"].forEach(function (id) { document.getElementById(id).value = "all"; });
+    document.getElementById("filter-from").value = ""; document.getElementById("filter-to").value = "";
+  };
+
+  applyFilters();
+
+  function toCsv(rows, headers, keys) {
+    var lines = [headers.join(",")];
+    rows.forEach(function (w) {
+      lines.push(keys.map(function (k) { return '"' + String(k(w)).replace(/"/g, '""') + '"'; }).join(","));
+    });
+    return lines.join("\r\n");
+  }
+  function download(filename, content, mime) {
+    var blob = new Blob(["﻿" + content], { type: mime || "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  document.getElementById("btn-export-csv").addEventListener("click", function () {
+    var rows = table.getFiltered();
+    var csv = toCsv(rows, ["工單編號", "建築物", "樓層", "位置", "設施類型", "負責人", "狀態", "風險等級", "建立時間", "SLA期限"],
+      [function (w) { return w.id; }, function (w) { return w.buildingName; }, function (w) { return w.floor; }, function (w) { return w.location; }, function (w) { return w.facilityLabel; }, function (w) { return w.assignee; }, function (w) { return D.STATUS_META[w.status].label; }, function (w) { return D.RISK_LEVELS[w.riskLevel].label; }, function (w) { return D.fmtDateTime(w.createdAt); }, function (w) { return D.fmtDate(w.slaDueAt); }]);
+    download("campusops_稽核紀錄_" + D.fmtDate(new Date().toISOString()).replace(/\//g, "") + ".csv", csv);
+    CO.toast("CSV 已匯出", "success");
+  });
+
+  document.getElementById("btn-export-gov").addEventListener("click", function () {
+    var rows = table.getFiltered();
+    var csv = toCsv(rows, ["案件編號", "標的建築物", "設施別", "通報來源", "派工對象", "目前狀態", "建立時間", "最後操作人員", "最後操作時間", "問題照片數", "完工照片數"],
+      [function (w) { return w.id; }, function (w) { return w.buildingName + w.floor + w.location; }, function (w) { return w.facilityLabel; }, function (w) { return w.sourceLabel; }, function (w) { return w.assignee || "未指派"; }, function (w) { return D.STATUS_META[w.status].label; }, function (w) { return D.fmtDateTime(w.createdAt); }, function (w) { return w.history[w.history.length - 1].actor; }, function (w) { return D.fmtDateTime(w.history[w.history.length - 1].time); }, function (w) { return w.photosBefore; }, function (w) { return w.photosAfter; }]);
+    download("campusops_政府稽核格式_" + D.fmtDate(new Date().toISOString()).replace(/\//g, "") + ".csv", csv);
+    CO.toast("政府稽核格式檔案已匯出", "success");
+  });
+
+  document.getElementById("btn-export-pdf").addEventListener("click", function () {
+    CO.toast("已開啟列印預覽，可另存為 PDF", "success");
+    setTimeout(function () { window.print(); }, 300);
+  });
+})();
+</script>
+</body>
+</html>
