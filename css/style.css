@@ -20,17 +20,19 @@
   --color-text-faint: #697770;
   --color-text-on-primary: #ffffff;
 
-  /* Brand — deep teal-green, the only "loud" color allowed outside status use */
-  --color-primary: #0f5c50;
-  --color-primary-dark: #0a453c;
-  --color-primary-darker: #073028;
-  --color-primary-soft: #e3efec;
-  --color-primary-soft-border: #bfd8d2;
-  /* Text/icon ink for use ON TOP of --color-primary-soft tinted surfaces (demo
-     banner, login note) — a distinct role from --color-primary-darker, which
-     stays a dark BACKGROUND (toasts/tooltips) with white text on it. This one
-     flips to a light tint in dark mode since the soft surface itself goes dark. */
-  --color-primary-soft-ink: #073028;
+  /* Brand — #0F766E is the ONE primary action color (buttons, links, active
+     nav, focus rings). Deliberately not used as ambient background filler
+     across cards/icons/panels — see --color-neutral-bg for that instead. */
+  --color-primary: #0f766e;
+  --color-primary-dark: #0e5c54;
+  --color-primary-darker: #08312d;
+  --color-primary-soft: #e6f6f4;
+  --color-primary-soft-border: #bfe0da;
+  /* Text/icon ink for use ON TOP of --color-primary-soft tinted surfaces —
+     a distinct role from --color-primary-darker, which stays a dark
+     BACKGROUND (toasts/tooltips) with white text on it. This one flips to a
+     light tint in dark mode since the soft surface itself goes dark. */
+  --color-primary-soft-ink: #0b3a35;
 
   /* Status palette — reserved. Red/orange/yellow ONLY for anomaly/risk states.
      Text roles (--color-caution/--color-risk) are tuned to clear WCAG AA
@@ -38,8 +40,13 @@
      status dots, never carrying text) and are unchanged. */
   --color-neutral: #5c6b66;
   --color-neutral-bg: #eceeed;
-  --color-info: #2a5fd6;
-  --color-info-bg: #e9eefc;
+  /* #2563EB — secondary accent, reserved for charts and informational
+     surfaces (demo banner, notices), so blue rather than green carries
+     "information" and green stays legible as the one brand/action color. */
+  --color-info: #2563eb;
+  --color-info-bg: #eff6ff;
+  --color-info-border: #bfdbfe;
+  --color-info-ink: #1e3a8a;
   --color-caution: #8a5f09;
   --color-caution-bg: #fbf1da;
   --color-caution-dot: #eda100;
@@ -58,6 +65,18 @@
   --sidebar-width: 248px;
   --sidebar-width-collapsed: 76px;
   --header-height: 60px;
+
+  /* Sidebar is a fixed dark-green identity, independent of the light/dark
+     content theme below — it does not flip with prefers-color-scheme or the
+     [data-theme] toggle, so these are plain values, not re-declared per mode. */
+  --sidebar-bg: #0b3a35;
+  --sidebar-active-bg: #0f766e;
+  --sidebar-accent: #14b8a6;
+  --sidebar-text: #eaf6f4;
+  --sidebar-text-soft: #cfe9e4;
+  --sidebar-text-muted: #86b8b0;
+  --sidebar-border: rgba(255, 255, 255, 0.09);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
 
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -81,16 +100,18 @@
     --color-text-soft: #cdd6d2;
     --color-text-muted: #a1aca6;
     --color-text-faint: #7f8d88;
-    --color-primary: #3fa892;
-    --color-primary-dark: #2c8a77;
-    --color-primary-darker: #1f6656;
-    --color-primary-soft: #1d2b28;
-    --color-primary-soft-border: #2c4440;
-    --color-primary-soft-ink: #9fd9c4;
+    --color-primary: #2dd4bf;
+    --color-primary-dark: #14b8a6;
+    --color-primary-darker: #0b3a35;
+    --color-primary-soft: #0f2b28;
+    --color-primary-soft-border: #1f4a44;
+    --color-primary-soft-ink: #93e6da;
     --color-neutral: #a1aca6;
     --color-neutral-bg: #232b28;
-    --color-info: #6f97e8;
-    --color-info-bg: #1c2436;
+    --color-info: #60a5fa;
+    --color-info-bg: #16233d;
+    --color-info-border: #24406b;
+    --color-info-ink: #bfdbfe;
     --color-caution: #e6b64a;
     --color-caution-bg: #332a13;
     --color-caution-dot: #eda100;
@@ -118,16 +139,18 @@
   --color-text-soft: #cdd6d2;
   --color-text-muted: #a1aca6;
   --color-text-faint: #7f8d88;
-  --color-primary: #3fa892;
-  --color-primary-dark: #2c8a77;
-  --color-primary-darker: #1f6656;
-  --color-primary-soft: #1d2b28;
-  --color-primary-soft-border: #2c4440;
-  --color-primary-soft-ink: #9fd9c4;
+  --color-primary: #2dd4bf;
+  --color-primary-dark: #14b8a6;
+  --color-primary-darker: #0b3a35;
+  --color-primary-soft: #0f2b28;
+  --color-primary-soft-border: #1f4a44;
+  --color-primary-soft-ink: #93e6da;
   --color-neutral: #a1aca6;
   --color-neutral-bg: #232b28;
-  --color-info: #6f97e8;
-  --color-info-bg: #1c2436;
+  --color-info: #60a5fa;
+  --color-info-bg: #16233d;
+  --color-info-border: #24406b;
+  --color-info-ink: #bfdbfe;
   --color-caution: #e6b64a;
   --color-caution-bg: #332a13;
   --color-caution-dot: #eda100;
@@ -180,12 +203,15 @@ h1, h2, h3, h4 { margin: 0; line-height: 1.35; }
 
 .app-shell { min-height: 100vh; display: flex; }
 
+/* Sidebar is a fixed dark-green identity (see --sidebar-* tokens) — it does
+   NOT follow the light/dark content theme, by design: it's the one constant
+   anchor while the main workspace stays light gray/white. */
 .sidebar {
   position: fixed;
   inset: 0 auto 0 0;
   width: var(--sidebar-width);
-  background: var(--color-surface);
-  border-right: 1px solid var(--color-border);
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
   display: flex;
   flex-direction: column;
   z-index: 40;
@@ -200,25 +226,25 @@ body.sidebar-collapsed .sidebar { width: var(--sidebar-width-collapsed); }
   align-items: center;
   gap: 10px;
   padding: 0 20px;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--sidebar-border);
   flex-shrink: 0;
   overflow: hidden;
 }
 .sidebar-brand .brand-mark {
   width: 30px; height: 30px; border-radius: var(--radius-md);
-  background: var(--color-primary); color: #fff;
+  background: var(--sidebar-accent); color: #fff;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .sidebar-brand .brand-mark svg { width: 18px; height: 18px; }
-.sidebar-brand .brand-text { font-size: 16px; font-weight: 700; white-space: nowrap; letter-spacing: 0.2px; }
-.sidebar-brand .brand-sub { font-size: 11px; color: var(--color-text-faint); white-space: nowrap; }
+.sidebar-brand .brand-text { font-size: 16px; font-weight: 700; white-space: nowrap; letter-spacing: 0.2px; color: var(--sidebar-text); }
+.sidebar-brand .brand-sub { font-size: 11px; color: var(--sidebar-text-muted); white-space: nowrap; }
 body.sidebar-collapsed .brand-text,
 body.sidebar-collapsed .brand-sub { display: none; }
 
 .sidebar-nav { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 2px; }
 .sidebar-section-label {
-  font-size: 11px; font-weight: 600; color: var(--color-text-faint);
+  font-size: 11px; font-weight: 600; color: var(--sidebar-text-muted);
   text-transform: uppercase; letter-spacing: 0.06em;
   padding: 14px 12px 6px;
 }
@@ -228,25 +254,27 @@ body.sidebar-collapsed .sidebar-section-label { display: none; }
   display: flex; align-items: center; gap: 12px;
   height: 38px; padding: 0 12px;
   border-radius: var(--radius-md);
-  font-size: 14px; color: var(--color-text-soft);
+  font-size: 14px; color: var(--sidebar-text-soft);
   cursor: pointer; white-space: nowrap; position: relative;
 }
-.sidebar-link:hover { background: var(--color-surface-sunken); color: var(--color-text); }
+.sidebar-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-text); }
 .sidebar-link svg { flex-shrink: 0; width: 18px; height: 18px; }
 .sidebar-link.active {
-  background: var(--color-primary);
+  background: var(--sidebar-active-bg);
   color: #fff;
   font-weight: 600;
 }
 .sidebar-link .lock-flag {
-  margin-left: auto; width: 14px; height: 14px; color: var(--color-text-faint); flex-shrink: 0;
+  margin-left: auto; width: 14px; height: 14px; color: var(--sidebar-text-muted); flex-shrink: 0;
 }
 .sidebar-link.active .lock-flag { color: rgba(255,255,255,0.75); }
 body.sidebar-collapsed .sidebar-link span:not(.lock-flag),
 body.sidebar-collapsed .sidebar-link .lock-flag { display: none; }
 body.sidebar-collapsed .sidebar-link { justify-content: center; }
 
-.sidebar-foot { border-top: 1px solid var(--color-border); padding: 8px; flex-shrink: 0; }
+.sidebar-foot { border-top: 1px solid var(--sidebar-border); padding: 8px; flex-shrink: 0; }
+.sidebar-foot .sidebar-link { color: var(--sidebar-text-soft); }
+.sidebar-foot .sidebar-link:hover { background: var(--sidebar-hover-bg); color: var(--sidebar-text); }
 
 .main-col { flex: 1; margin-left: var(--sidebar-width); display: flex; flex-direction: column; min-width: 0; transition: margin-left 0.2s ease; }
 body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); }
@@ -291,7 +319,7 @@ body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); 
 }
 .role-chip .avatar {
   width: 26px; height: 26px; border-radius: var(--radius-sm);
-  background: var(--color-primary-soft); color: var(--color-primary-dark);
+  background: var(--color-neutral-bg); color: var(--color-text-soft);
   display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
   flex-shrink: 0;
 }
@@ -317,30 +345,33 @@ body.sidebar-collapsed .main-col { margin-left: var(--sidebar-width-collapsed); 
 .role-menu-item.active svg { color: var(--color-primary-dark); }
 
 /* ---------- Demo banner ---------- */
+/* Uses the blue info accent, not brand green — it's an informational
+   notice, not a primary action, and keeps green from bleeding into every
+   page's very first pixels. */
 .demo-banner {
-  background: var(--color-primary-soft);
-  border-bottom: 1px solid var(--color-primary-soft-border);
-  color: var(--color-primary-soft-ink);
+  background: var(--color-info-bg);
+  border-bottom: 1px solid var(--color-info-border);
+  color: var(--color-info-ink);
   font-size: 12.5px;
   padding: 8px 20px;
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
 }
-.demo-banner svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--color-primary-soft-ink); }
+.demo-banner svg { width: 15px; height: 15px; flex-shrink: 0; color: var(--color-info-ink); }
 .demo-banner .db-text { flex: 1; min-width: 200px; }
 .demo-banner .db-tests { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.demo-banner .db-tests span { color: var(--color-primary-soft-ink); font-weight: 600; }
+.demo-banner .db-tests span { color: var(--color-info-ink); font-weight: 600; }
 .demo-banner .db-tests a {
-  border: 1px solid var(--color-primary-soft-border); border-radius: var(--radius-sm);
-  padding: 2px 8px; font-size: 11.5px; background: var(--color-surface); color: var(--color-primary-soft-ink);
+  border: 1px solid var(--color-info-border); border-radius: var(--radius-sm);
+  padding: 2px 8px; font-size: 11.5px; background: var(--color-surface); color: var(--color-info-ink);
 }
-.demo-banner .db-tests a:hover { background: var(--color-primary-soft); }
+.demo-banner .db-tests a:hover { background: var(--color-info-bg); }
 .demo-banner .demo-mode-switcher { flex-shrink: 0; }
 .demo-banner .demo-mode-switcher .role-chip {
-  height: 26px; padding: 0 8px; gap: 6px; border-color: var(--color-primary-soft-border);
-  background: var(--color-surface); color: var(--color-primary-soft-ink); font-weight: 600; font-size: 12px;
+  height: 26px; padding: 0 8px; gap: 6px; border-color: var(--color-info-border);
+  background: var(--color-surface); color: var(--color-info-ink); font-weight: 600; font-size: 12px;
 }
 .demo-banner .demo-mode-switcher .role-chip svg { width: 14px; height: 14px; }
-.demo-banner .demo-mode-switcher .role-chip:hover { background: var(--color-primary-soft); }
+.demo-banner .demo-mode-switcher .role-chip:hover { background: var(--color-info-bg); }
 .demo-banner .demo-mode-switcher .role-menu { right: 0; }
 
 /* ---------- Page layout ---------- */
@@ -435,7 +466,7 @@ input::placeholder, textarea::placeholder { color: var(--color-text-faint); }
 .stat-card .stat-icon svg { width: 16px; height: 16px; }
 .stat-card .stat-value { font-size: 27px; font-weight: 800; letter-spacing: -0.01em; }
 .stat-card .stat-foot { font-size: 12px; color: var(--color-text-faint); display: flex; align-items: center; gap: 5px; }
-.stat-card.tone-neutral .stat-icon { background: var(--color-primary-soft); color: var(--color-primary-dark); }
+.stat-card.tone-neutral .stat-icon { background: var(--color-neutral-bg); color: var(--color-text-soft); }
 .stat-card.tone-caution .stat-icon { background: var(--color-caution-bg); color: var(--color-caution); }
 .stat-card.tone-risk .stat-icon { background: var(--color-risk-bg); color: var(--color-risk); }
 .stat-card.tone-danger .stat-icon { background: var(--color-danger-bg); color: var(--color-danger); }
@@ -586,7 +617,7 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .login-brand .brand-sub { font-size: 11.5px; color: var(--color-text-faint); }
 .login-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
 .login-desc { font-size: 13px; color: var(--color-text-muted); margin-bottom: 22px; }
-.login-demo-note { background: var(--color-primary-soft); border: 1px solid var(--color-primary-soft-border); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; color: var(--color-primary-soft-ink); margin-bottom: 18px; display: flex; gap: 8px; }
+.login-demo-note { background: var(--color-info-bg); border: 1px solid var(--color-info-border); border-radius: var(--radius-md); padding: 10px 12px; font-size: 12px; color: var(--color-info-ink); margin-bottom: 18px; display: flex; gap: 8px; }
 .login-demo-note svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; }
 .login-foot { text-align: center; font-size: 11.5px; color: var(--color-text-faint); margin-top: 16px; }
 .password-field-wrap { position: relative; }
