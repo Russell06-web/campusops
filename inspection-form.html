@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>行動巡檢表單 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807a">
+<link rel="stylesheet" href="css/style.css?v=20260807b">
 </head>
 <body data-page="inspection-form" style="background:var(--color-surface-sunken);">
 <div class="mobile-shell" id="mobile-root"></div>
 
-<script src="js/main.js"></script>
-<script src="js/data.js"></script>
+<script src="js/main.js?v=20260807b"></script>
+<script src="js/data.js?v=20260807b"></script>
 <script>
 (function () {
   "use strict";
@@ -112,12 +112,14 @@
 
       '<div class="m-card">' +
         '<h4>' + ico("fileText") + "備註</h4>" +
+        '<label for="note-input" class="visually-hidden">備註</label>' +
         '<textarea id="note-input" placeholder="請描述現場狀況、異常原因或處理建議…"></textarea>' +
       "</div>" +
 
       '<div class="m-card">' +
         '<h4>' + ico("camera") + "現場照片</h4>" +
         '<div class="photo-grid" id="photo-grid"></div>' +
+        '<label for="photo-input" class="visually-hidden">新增現場照片</label>' +
         '<input type="file" accept="image/*" capture="environment" id="photo-input" class="hidden">' +
       "</div>" +
 
@@ -160,13 +162,23 @@
     var grid = document.getElementById("photo-grid");
     if (!grid) return;
     grid.innerHTML = photos.map(function (p, i) {
-      if (p) return '<div class="photo-slot filled" data-slot="' + i + '" style="background-image:url(' + p + ');background-size:cover;background-position:center;"><button type="button" class="rm-btn" data-remove-photo="' + i + '">' + ico("x") + "</button></div>";
-      return '<div class="photo-slot" data-slot="' + i + '">' + ico("camera") + "<span>新增照片</span></div>";
+      var n = i + 1;
+      if (p) {
+        // Two sibling buttons (not nested — a <button> can't contain another
+        // <button>): one full-size "replace" button carries the thumbnail,
+        // the small corner button removes it. Each gets its own accessible name.
+        return (
+          '<div class="photo-slot filled" data-slot="' + i + '">' +
+          '<button type="button" class="photo-slot-img" data-slot-trigger="' + i + '" aria-label="更換第 ' + n + ' 張現場照片" style="background-image:url(' + p + ');"></button>' +
+          '<button type="button" class="rm-btn" data-remove-photo="' + i + '" aria-label="移除第 ' + n + ' 張現場照片">' + ico("x") + "</button>" +
+          "</div>"
+        );
+      }
+      return '<button type="button" class="photo-slot" data-slot="' + i + '" data-slot-trigger="' + i + '" aria-label="新增現場照片 ' + n + '">' + ico("camera") + "<span>新增照片</span></button>";
     }).join("");
-    grid.querySelectorAll(".photo-slot").forEach(function (slot) {
-      slot.addEventListener("click", function (e) {
-        if (e.target.closest("[data-remove-photo]")) return;
-        document.getElementById("photo-input").setAttribute("data-target-slot", slot.getAttribute("data-slot"));
+    grid.querySelectorAll("[data-slot-trigger]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        document.getElementById("photo-input").setAttribute("data-target-slot", el.getAttribute("data-slot-trigger"));
         document.getElementById("photo-input").click();
       });
     });
