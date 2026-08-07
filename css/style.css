@@ -655,6 +655,42 @@ table.data-table tbody tr.row-link { cursor: pointer; }
   .page-header { flex-direction: column; align-items: stretch; }
 }
 
+/* ---------- Mobile Dashboard: denser KPIs + tabbed analysis row ---------- */
+
+/* Base (desktop/tablet) state — declared BEFORE the media query below so the
+   640px override actually wins there; two equal-specificity rules resolve
+   by source order, and a later plain rule would otherwise beat an earlier
+   media-query rule regardless of viewport. */
+.dashboard-tabs { display: none; }
+.urgent-mobile-more { display: none; }
+
+@media (max-width: 640px) {
+  /* KPI cards stay 2-up on the dashboard specifically (denser than the
+     generic 1-col fallback above), so all 4 stat tiles are visible without
+     scrolling past them one at a time. */
+  body[data-page="dashboard"] .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  body[data-page="dashboard"] .stat-card { min-height: 0; padding: 12px 14px; }
+  body[data-page="dashboard"] .stat-card .stat-value { font-size: 22px; }
+
+  /* 近7日趨勢 / 建築排名 / 設施類型分布 collapse from 3 stacked cards into
+     one tabbed view — see .dashboard-tabs role="tablist" wiring in
+     dashboard.html. Desktop/tablet keep the plain 3-card grid untouched. */
+  .dashboard-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 12px; margin: -2px -2px 0; }
+  .dashboard-tabs [role="tab"] {
+    flex: 1 0 auto; white-space: nowrap; border: 1px solid var(--color-border-strong); background: var(--color-surface);
+    color: var(--color-text-muted); font-size: 12.5px; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .dashboard-tabs [role="tab"][aria-selected="true"] { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+  body[data-page="dashboard"] .analysis-row { display: block; margin-bottom: 0; }
+  body[data-page="dashboard"] .analysis-row > .card { display: none; margin-bottom: 16px; }
+  body[data-page="dashboard"] .analysis-row > .card.tab-active { display: block; }
+
+  /* 需要立即處理: only the top 3 rows on a phone, with an explicit way to
+     reach the rest instead of a long scroll. */
+  #urgent-list tbody tr:nth-child(n+4) { display: none; }
+  .urgent-mobile-more { display: block; padding: 12px 16px 16px; }
+}
+
 /* ---------- Mobile inspection form (390px design) ---------- */
 
 .mobile-shell { max-width: 430px; margin: 0 auto; min-height: 100vh; background: var(--color-surface-sunken); display: flex; flex-direction: column; }
@@ -676,8 +712,8 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 
 .mobile-body { flex: 1; padding: 14px 14px 100px; display: flex; flex-direction: column; gap: 14px; }
 .m-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 14px; }
-.m-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-.m-card h4 svg { width: 15px; height: 15px; color: var(--color-primary); }
+.m-card h2 { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.m-card h2 svg { width: 15px; height: 15px; color: var(--color-primary); }
 .m-equipment-row { display: flex; justify-content: space-between; font-size: 12.5px; padding: 5px 0; border-bottom: 1px dashed var(--color-border); }
 .m-equipment-row:last-child { border-bottom: none; }
 .m-equipment-row .k { color: var(--color-text-faint); }
@@ -747,7 +783,10 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .map-panel { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow-y: auto; }
 .map-panel .card-body { padding: 16px; }
 .map-filter-group { margin-bottom: 18px; }
-.map-filter-group h4 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-faint); margin-bottom: 10px; }
+.map-filter-group h2,
+.map-filter-group .map-filter-label {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-faint); margin-bottom: 10px; display: block;
+}
 .layer-row { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: 13px; }
 .layer-row .layer-swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
 .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 0; }

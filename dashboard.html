@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>營運總覽 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807b">
+<link rel="stylesheet" href="css/style.css?v=20260807c">
 </head>
 <body data-page="dashboard" data-roles="manager">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -52,16 +52,22 @@
         </div>
       </div>
 
-      <div class="grid-3 mb-16">
-        <div class="card">
+      <div class="dashboard-tabs" role="tablist" aria-label="分析圖表切換">
+        <button type="button" role="tab" id="dtab-trend" aria-controls="panel-trend" aria-selected="true" tabindex="0" data-tab="trend">近 7 日趨勢</button>
+        <button type="button" role="tab" id="dtab-rank" aria-controls="panel-rank" aria-selected="false" tabindex="-1" data-tab="rank">建築排名</button>
+        <button type="button" role="tab" id="dtab-facility" aria-controls="panel-facility" aria-selected="false" tabindex="-1" data-tab="facility">設施分布</button>
+      </div>
+
+      <div class="grid-3 mb-16 analysis-row">
+        <div class="card tab-active" id="panel-trend" role="tabpanel" aria-labelledby="dtab-trend" tabindex="0">
           <div class="card-header"><h3>近 7 日工單趨勢</h3></div>
           <div class="card-body" id="trend-chart"></div>
         </div>
-        <div class="card">
+        <div class="card" id="panel-rank" role="tabpanel" aria-labelledby="dtab-rank" tabindex="0">
           <div class="card-header"><h3>各建築物異常數量排名</h3><span class="text-faint text-sm">未結案</span></div>
           <div class="card-body" id="building-rank"></div>
         </div>
-        <div class="card">
+        <div class="card" id="panel-facility" role="tabpanel" aria-labelledby="dtab-facility" tabindex="0">
           <div class="card-header"><h3>設施類型分布</h3></div>
           <div class="card-body" id="facility-dist"></div>
         </div>
@@ -70,15 +76,16 @@
       <div class="card">
         <div class="card-header"><h3>需要立即處理</h3><span class="text-faint text-sm">逾期／高風險／待驗收，依急迫程度排序</span></div>
         <div id="urgent-list"></div>
+        <div class="urgent-mobile-more"><a class="btn btn-secondary btn-block" href="workorders.html">查看全部工單</a></div>
       </div>
     </main>
   </div>
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260807b"></script>
-<script src="js/data.js?v=20260807b"></script>
-<script src="js/shell.js?v=20260807b"></script>
+<script src="js/main.js?v=20260807c"></script>
+<script src="js/data.js?v=20260807c"></script>
+<script src="js/shell.js?v=20260807c"></script>
 <script>
 (function () {
   "use strict";
@@ -290,6 +297,34 @@
       tr.addEventListener("click", function () { window.location.href = "workorder-detail.html?id=" + tr.getAttribute("data-row-id"); });
     });
   }
+
+  // ---------- mobile analysis tabs (role="tablist"/"tabpanel") ----------
+  // Only visible under the 640px breakpoint (see style.css); harmless no-op
+  // chrome on desktop since .dashboard-tabs stays display:none there.
+  (function initDashboardTabs() {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.dashboard-tabs [role="tab"]'));
+    if (!tabs.length) return;
+    function selectTab(key, moveFocus) {
+      tabs.forEach(function (t) {
+        var isSelected = t.getAttribute("data-tab") === key;
+        t.setAttribute("aria-selected", String(isSelected));
+        t.tabIndex = isSelected ? 0 : -1;
+        var panel = document.getElementById(t.getAttribute("aria-controls"));
+        if (panel) panel.classList.toggle("tab-active", isSelected);
+        if (isSelected && moveFocus) t.focus();
+      });
+    }
+    tabs.forEach(function (tab, idx) {
+      tab.addEventListener("click", function () { selectTab(tab.getAttribute("data-tab"), false); });
+      tab.addEventListener("keydown", function (e) {
+        var dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? "home" : e.key === "End" ? "end" : 0;
+        if (!dir) return;
+        e.preventDefault();
+        var nextIdx = dir === "home" ? 0 : dir === "end" ? tabs.length - 1 : (idx + dir + tabs.length) % tabs.length;
+        selectTab(tabs[nextIdx].getAttribute("data-tab"), true);
+      });
+    });
+  })();
 })();
 </script>
 </body>

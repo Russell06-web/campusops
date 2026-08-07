@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>校園設施分布圖 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807b">
+<link rel="stylesheet" href="css/style.css?v=20260807c">
 </head>
 <body data-page="map" data-roles="manager,inspector">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -27,9 +27,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260807b"></script>
-<script src="js/data.js?v=20260807b"></script>
-<script src="js/shell.js?v=20260807b"></script>
+<script src="js/main.js?v=20260807c"></script>
+<script src="js/data.js?v=20260807c"></script>
+<script src="js/shell.js?v=20260807c"></script>
 <script>
 (function () {
   "use strict";
@@ -65,27 +65,27 @@
   root.innerHTML =
     '<div class="map-layout">' +
     '<div class="map-panel"><div class="card-body">' +
-      '<div class="map-filter-group"><h4>建築物</h4>' +
+      '<div class="map-filter-group"><label for="filter-building" class="map-filter-label">建築物</label>' +
         '<div class="select-wrap"><select id="filter-building"><option value="all">全部建築</option>' +
         D.BUILDINGS.map(function (b) { return '<option value="' + b.id + '">' + b.name + "</option>"; }).join("") +
         "</select>" + ico("chevronDown") + "</div>" +
       "</div>" +
-      '<div class="map-filter-group"><h4>樓層</h4>' +
+      '<div class="map-filter-group"><label for="filter-floor" class="map-filter-label">樓層</label>' +
         '<div class="select-wrap"><select id="filter-floor"><option value="all">全部樓層</option>' +
         ALL_FLOORS.map(function (f) { return '<option value="' + f + '">' + f + "</option>"; }).join("") +
         "</select>" + ico("chevronDown") + "</div>" +
       "</div>" +
-      '<div class="map-filter-group"><h4>設施圖層</h4>' +
+      '<div class="map-filter-group"><h2>設施圖層</h2>' +
       D.FACILITY_TYPES.map(function (f) {
         return '<label class="layer-row"><input type="checkbox" data-layer="' + f.id + '" checked><span class="layer-swatch" style="background:' + f.swatch + ';"></span>' + f.name + "</label>";
       }).join("") +
       "</div>" +
-      '<div class="map-filter-group"><h4>風險等級</h4>' +
+      '<div class="map-filter-group"><h2>風險等級</h2>' +
       Object.keys(D.RISK_LEVELS).map(function (r) {
         return '<label class="layer-row"><input type="checkbox" data-risk="' + r + '" checked> <span class="badge ' + D.RISK_LEVELS[r].badge + '"><span class="dot"></span>' + D.RISK_LEVELS[r].label + "</span></label>";
       }).join("") +
       "</div>" +
-      '<div class="map-filter-group"><h4>圖例</h4>' +
+      '<div class="map-filter-group"><h2>圖例</h2>' +
       '<div class="legend-row"><span class="dot-lg" style="background:var(--color-neutral);"></span>一般</div>' +
       '<div class="legend-row"><span class="dot-lg" style="background:var(--color-caution-dot);"></span>注意</div>' +
       '<div class="legend-row"><span class="dot-lg" style="background:var(--color-risk-dot);"></span>高風險</div>' +
@@ -105,7 +105,7 @@
       '<div class="map-hint">' + ico("navigation") + "<span>拖曳可平移，滾輪或按鈕可縮放</span></div>" +
     "</div>" +
     '<div class="map-panel"><div class="card-body">' +
-      '<h4 style="font-size:12px;font-weight:700;color:var(--color-text-faint);text-transform:uppercase;margin-bottom:10px;">目前顯示的工單（<span id="list-count">0</span>）</h4>' +
+      '<h2 style="font-size:12px;font-weight:700;color:var(--color-text-faint);text-transform:uppercase;margin-bottom:10px;">目前顯示的工單（<span id="list-count">0</span>）</h2>' +
       '<div id="map-list"></div>' +
     "</div></div>" +
     "</div>";

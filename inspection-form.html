@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>行動巡檢表單 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807b">
+<link rel="stylesheet" href="css/style.css?v=20260807c">
 </head>
 <body data-page="inspection-form" style="background:var(--color-surface-sunken);">
 <div class="mobile-shell" id="mobile-root"></div>
 
-<script src="js/main.js?v=20260807b"></script>
-<script src="js/data.js?v=20260807b"></script>
+<script src="js/main.js?v=20260807c"></script>
+<script src="js/data.js?v=20260807c"></script>
 <script>
 (function () {
   "use strict";
@@ -28,7 +28,7 @@
     return (
       '<div class="mobile-topbar">' +
       '<a class="m-back" href="inspections.html">' + ico("chevronLeft") + "</a>" +
-      '<div class="m-title">' + title + "</div>" +
+      '<h1 class="m-title">' + title + "</h1>" +
       '<a class="m-back" href="dashboard.html" title="返回桌面版" style="font-size:10px;">' + ico("home") + "</a>" +
       "</div>"
     );
@@ -77,7 +77,7 @@
       '<div class="mobile-body">' +
 
       '<div class="m-card">' +
-        '<h4>' + ico("building") + "設備資訊</h4>" +
+        '<h2>' + ico("building") + "設備資訊</h2>" +
         '<div class="m-equipment-row"><span class="k">設備編號</span><span class="v">' + equipment.id + "</span></div>" +
         '<div class="m-equipment-row"><span class="k">設備名稱</span><span class="v">' + equipment.name + "</span></div>" +
         '<div class="m-equipment-row"><span class="k">位置</span><span class="v">' + equipment.buildingName + " " + equipment.floor + " " + equipment.location + "</span></div>" +
@@ -88,7 +88,7 @@
       "</div>" +
 
       '<div class="m-card">' +
-        '<h4>' + ico("checkSquare") + "正常／異常判定</h4>" +
+        '<h2>' + ico("checkSquare") + "正常／異常判定</h2>" +
         '<div class="judge-toggle" role="group" aria-label="正常／異常判定">' +
           '<button type="button" class="judge-btn normal" data-judge="normal" aria-pressed="false" aria-label="正常／異常判定：正常">' + ico("checkCircle") + "正常</button>" +
           '<button type="button" class="judge-btn abnormal" data-judge="abnormal" aria-pressed="false" aria-label="正常／異常判定：異常">' + ico("alertTriangle") + "異常</button>" +
@@ -96,7 +96,7 @@
       "</div>" +
 
       '<div class="m-card">' +
-        '<h4>' + ico("clipboard") + "檢查項目</h4>" +
+        '<h2>' + ico("clipboard") + "檢查項目</h2>" +
         checklistRow("appearance", "外觀是否完整") +
         checklistRow("function", "功能是否正常運作") +
         checklistRow("label", "標示／告示是否清楚") +
@@ -104,27 +104,27 @@
       "</div>" +
 
       '<div class="m-card" id="wo-card" style="display:none;">' +
-        '<h4>' + ico("workorder") + "建立工單</h4>" +
+        '<h2>' + ico("workorder") + "建立工單</h2>" +
         '<p class="text-sm text-muted mb-8">已偵測到異常，將自動建立工單並依下列風險等級派工。</p>' +
         '<div class="field" style="margin-bottom:0;"><label for="risk-select">風險等級</label>' +
         '<div class="select-wrap"><select id="risk-select"><option value="caution">注意</option><option value="high">高風險</option><option value="overdue">逾期（安全疑慮，需立即處理）</option></select>' + ico("chevronDown") + "</div></div>" +
       "</div>" +
 
       '<div class="m-card">' +
-        '<h4>' + ico("fileText") + "備註</h4>" +
+        '<h2>' + ico("fileText") + "備註</h2>" +
         '<label for="note-input" class="visually-hidden">備註</label>' +
         '<textarea id="note-input" placeholder="請描述現場狀況、異常原因或處理建議…"></textarea>' +
       "</div>" +
 
       '<div class="m-card">' +
-        '<h4>' + ico("camera") + "現場照片</h4>" +
+        '<h2>' + ico("camera") + "現場照片</h2>" +
         '<div class="photo-grid" id="photo-grid"></div>' +
         '<label for="photo-input" class="visually-hidden">新增現場照片</label>' +
         '<input type="file" accept="image/*" capture="environment" id="photo-input" class="hidden">' +
       "</div>" +
 
       '<div class="m-card">' +
-        '<h4>' + ico("mapPin") + "定位資訊</h4>" +
+        '<h2>' + ico("mapPin") + "定位資訊</h2>" +
         '<div class="geo-chip" id="geo-chip">' + ico("mapPin") + "<span>定位擷取中…</span></div>" +
       "</div>" +
 

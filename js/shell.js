@@ -62,7 +62,7 @@
           '<button type="button" class="sidebar-link" data-reset-demo style="width:100%;border:none;background:none;text-align:left;font:inherit;cursor:pointer;">' +
             ico("refresh") + "<span>重設 Demo 資料</span>" +
           "</button>" +
-          '<a class="sidebar-link" href="#" data-logout>' + ico("logout") + "<span>登出</span></a>" +
+          '<button type="button" class="sidebar-link" data-logout style="width:100%;border:none;background:none;text-align:left;font:inherit;cursor:pointer;">' + ico("logout") + "<span>登出</span></button>" +
         "</div>" +
       "</aside>"
     );
@@ -83,11 +83,11 @@
     return (
       '<div class="topbar-inner">' +
         '<div class="topbar-left">' +
-          '<button class="sidebar-toggle" data-sidebar-toggle aria-label="收合/展開選單">' + ico("menu") + "</button>" +
+          '<button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="收合/展開選單">' + ico("menu") + "</button>" +
           '<div class="page-heading"><h1>' + (title || "") + "</h1>" + (breadcrumb ? '<span class="breadcrumb">' + breadcrumb + "</span>" : "") + "</div>" +
         "</div>" +
         '<div class="topbar-right">' +
-          '<button class="icon-btn" aria-label="通知" data-notification-trigger>' + ico("bell") + '<span class="badge-dot"></span></button>' +
+          '<button type="button" class="icon-btn" aria-label="通知" data-notification-trigger aria-haspopup="true" aria-expanded="false">' + ico("bell") + '<span class="badge-dot"></span></button>' +
           '<div class="role-switcher">' +
             '<button type="button" class="role-chip" data-role-toggle aria-haspopup="true" aria-expanded="false">' +
               '<span class="avatar">' + initials(role.name) + "</span>" +
@@ -211,14 +211,23 @@
       var roleToggle = e.target.closest("[data-role-toggle]");
       var notifToggle = e.target.closest("[data-notification-trigger]");
       var demoModeToggle = e.target.closest("[data-demo-mode-toggle]");
-      var roleMenu = document.getElementById("role-menu");
-      var notifMenu = document.getElementById("notif-menu");
-      var demoModeMenu = document.getElementById("demo-mode-menu");
-      var allMenus = [roleMenu, notifMenu, demoModeMenu];
-      function closeAllExcept(keep) { allMenus.forEach(function (m) { if (m && m !== keep) m.classList.remove("open"); }); }
-      if (roleToggle) { roleMenu.classList.toggle("open"); closeAllExcept(roleMenu); }
-      else if (notifToggle) { notifMenu.classList.toggle("open"); closeAllExcept(notifMenu); }
-      else if (demoModeToggle) { demoModeMenu.classList.toggle("open"); closeAllExcept(demoModeMenu); }
+      var menuPairs = [
+        { menu: document.getElementById("role-menu"), toggle: document.querySelector("[data-role-toggle]") },
+        { menu: document.getElementById("notif-menu"), toggle: document.querySelector("[data-notification-trigger]") },
+        { menu: document.getElementById("demo-mode-menu"), toggle: document.querySelector("[data-demo-mode-toggle]") }
+      ];
+      function closeAllExcept(keepMenu) {
+        menuPairs.forEach(function (p) {
+          if (!p.menu) return;
+          var isOpen = p.menu === keepMenu;
+          p.menu.classList.toggle("open", isOpen);
+          if (p.toggle) p.toggle.setAttribute("aria-expanded", String(isOpen));
+        });
+      }
+      var roleMenu = menuPairs[0].menu, notifMenu = menuPairs[1].menu, demoModeMenu = menuPairs[2].menu;
+      if (roleToggle) { closeAllExcept(roleMenu.classList.contains("open") ? null : roleMenu); }
+      else if (notifToggle) { closeAllExcept(notifMenu.classList.contains("open") ? null : notifMenu); }
+      else if (demoModeToggle) { closeAllExcept(demoModeMenu.classList.contains("open") ? null : demoModeMenu); }
       else if (!e.target.closest(".role-menu")) { closeAllExcept(null); }
 
       var pick = e.target.closest("[data-role-pick]");
