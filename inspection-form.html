@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>行動巡檢表單 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260806c">
+<link rel="stylesheet" href="css/style.css?v=20260807a">
 </head>
 <body data-page="inspection-form" style="background:var(--color-surface-sunken);">
 <div class="mobile-shell" id="mobile-root"></div>
@@ -89,9 +89,9 @@
 
       '<div class="m-card">' +
         '<h4>' + ico("checkSquare") + "正常／異常判定</h4>" +
-        '<div class="judge-toggle">' +
-          '<button type="button" class="judge-btn normal" data-judge="normal">' + ico("checkCircle") + "正常</button>" +
-          '<button type="button" class="judge-btn abnormal" data-judge="abnormal">' + ico("alertTriangle") + "異常</button>" +
+        '<div class="judge-toggle" role="group" aria-label="正常／異常判定">' +
+          '<button type="button" class="judge-btn normal" data-judge="normal" aria-pressed="false" aria-label="正常／異常判定：正常">' + ico("checkCircle") + "正常</button>" +
+          '<button type="button" class="judge-btn abnormal" data-judge="abnormal" aria-pressed="false" aria-label="正常／異常判定：異常">' + ico("alertTriangle") + "異常</button>" +
         "</div>" +
       "</div>" +
 
@@ -148,9 +148,10 @@
 
   function checklistRow(key, label) {
     return (
-      '<div class="check-item"><span class="ci-label">' + label + '</span>' +
-      '<div class="mini-toggle" data-check="' + key + '">' +
-      '<button type="button" data-val="on">是</button><button type="button" data-val="off">否</button>' +
+      '<div class="check-item"><span class="ci-label" id="ci-label-' + key + '">' + label + '</span>' +
+      '<div class="mini-toggle" data-check="' + key + '" role="group" aria-labelledby="ci-label-' + key + '">' +
+      '<button type="button" data-val="on" aria-pressed="false" aria-label="' + label + '：是">是</button>' +
+      '<button type="button" data-val="off" aria-pressed="false" aria-label="' + label + '：否">否</button>' +
       "</div></div>"
     );
   }
@@ -213,7 +214,11 @@
     root.querySelectorAll("[data-judge]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         judgement = btn.getAttribute("data-judge");
-        root.querySelectorAll(".judge-btn").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-judge") === judgement); });
+        root.querySelectorAll(".judge-btn").forEach(function (b) {
+          var isActive = b.getAttribute("data-judge") === judgement;
+          b.classList.toggle("active", isActive);
+          b.setAttribute("aria-pressed", String(isActive));
+        });
         document.getElementById("wo-card").style.display = judgement === "abnormal" ? "block" : "none";
       });
     });
@@ -222,8 +227,12 @@
         btn.addEventListener("click", function () {
           var key = group.getAttribute("data-check");
           checklist[key] = btn.getAttribute("data-val");
-          group.querySelectorAll("button").forEach(function (b) { b.classList.remove("on-active", "off-active"); });
+          group.querySelectorAll("button").forEach(function (b) {
+            b.classList.remove("on-active", "off-active");
+            b.setAttribute("aria-pressed", "false");
+          });
           btn.classList.add(btn.getAttribute("data-val") === "on" ? "on-active" : "off-active");
+          btn.setAttribute("aria-pressed", "true");
         });
       });
     });
