@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>稽核與報表 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807c">
+<link rel="stylesheet" href="css/style.css?v=20260808a">
 </head>
 <body data-page="reports" data-roles="manager">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -51,9 +51,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260807c"></script>
-<script src="js/data.js?v=20260807c"></script>
-<script src="js/shell.js?v=20260807c"></script>
+<script src="js/main.js?v=20260808a"></script>
+<script src="js/data.js?v=20260808a"></script>
+<script src="js/shell.js?v=20260808a"></script>
 <script>
 (function () {
   "use strict";
@@ -142,7 +142,7 @@
         '<td data-label="狀態"><span class="badge ' + status.badge + '">' + status.label + "</span></td>" +
         '<td data-label="建立時間" class="cell-muted">' + D.fmtDateTime(w.createdAt) + "</td>" +
         '<td data-label="最後操作" class="cell-muted">' + last.actor + " · " + D.fmtDateTime(last.time) + "</td>" +
-        '<td data-label="證明照片">前 ' + w.photosBefore + " ／ 後 " + w.photosAfter + "</td>" +
+        '<td data-label="證明照片">前 ' + w.photos.issue.length + " ／ 後 " + w.photos.completion.length + "</td>" +
         "</tr>"
       );
     }
@@ -204,7 +204,7 @@
   document.getElementById("btn-export-gov").addEventListener("click", function () {
     var rows = table.getFiltered();
     var csv = toCsv(rows, ["案件編號", "標的建築物", "設施別", "通報來源", "派工對象", "目前狀態", "建立時間", "最後操作人員", "最後操作時間", "問題照片數", "完工照片數"],
-      [function (w) { return w.id; }, function (w) { return w.buildingName + w.floor + w.location; }, function (w) { return w.facilityLabel; }, function (w) { return w.sourceLabel; }, function (w) { return w.assignee || "未指派"; }, function (w) { return D.STATUS_META[w.status].label; }, function (w) { return D.fmtDateTime(w.createdAt); }, function (w) { return w.history[w.history.length - 1].actor; }, function (w) { return D.fmtDateTime(w.history[w.history.length - 1].time); }, function (w) { return w.photosBefore; }, function (w) { return w.photosAfter; }]);
+      [function (w) { return w.id; }, function (w) { return w.buildingName + w.floor + w.location; }, function (w) { return w.facilityLabel; }, function (w) { return w.sourceLabel; }, function (w) { return w.assignee || "未指派"; }, function (w) { return D.STATUS_META[w.status].label; }, function (w) { return D.fmtDateTime(w.createdAt); }, function (w) { return w.history[w.history.length - 1].actor; }, function (w) { return D.fmtDateTime(w.history[w.history.length - 1].time); }, function (w) { return w.photos.issue.length; }, function (w) { return w.photos.completion.length; }]);
     download("campusops_政府稽核格式_" + D.fmtDate(new Date().toISOString()).replace(/\//g, "") + ".csv", csv);
     CO.toast("政府稽核格式檔案已匯出", "success");
   });

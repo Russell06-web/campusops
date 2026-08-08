@@ -556,6 +556,11 @@ table.data-table tbody tr.row-link { cursor: pointer; }
   align-items: center; justify-content: center; z-index: 100; padding: 20px;
 }
 .modal-backdrop.open { display: flex; }
+/* CO.openModal()/closeTopModal() already toggled this class on <body>, but
+   there was no rule making it actually lock scroll — every modal in the app
+   (reset-demo, submit-confirm, reject, and now the photo lightbox) gets the
+   fix at once. */
+body.modal-open { overflow: hidden; }
 .modal {
   background: var(--color-surface); border-radius: var(--radius-lg); padding: 22px;
   width: 420px; max-width: 100%; max-height: 88vh; overflow-y: auto;
@@ -689,6 +694,28 @@ table.data-table tbody tr.row-link { cursor: pointer; }
      reach the rest instead of a long scroll. */
   #urgent-list tbody tr:nth-child(n+4) { display: none; }
   .urgent-mobile-more { display: block; padding: 12px 16px 16px; }
+
+  /* 需要立即處理 gets a bespoke "photo left, text right" card instead of the
+     generic label:value stack every other responsive table uses — a grid
+     with the thumbnail spanning all rows in column 1 and 標題/位置/風險/狀態
+     stacked in column 2. 工單編號/類型/SLA are dropped on this card (still
+     visible on desktop and on the full 工單管理 list). */
+  .workorder-thumbnail { width: 72px; height: 54px; }
+  #urgent-list table.data-table.table-responsive-stack { min-width: 0; }
+  #urgent-list tbody tr {
+    display: grid; grid-template-columns: 72px 1fr; column-gap: 12px; align-items: start;
+    border: 1px solid var(--color-border); border-radius: var(--radius-lg); margin-bottom: 10px; padding: 10px;
+  }
+  #urgent-list td[data-label="工單編號"],
+  #urgent-list td[data-label="類型"],
+  #urgent-list td[data-label="SLA 期限"] { display: none; }
+  #urgent-list td[data-label="現場"] { grid-column: 1; grid-row: 1 / -1; padding: 0; align-self: start; }
+  #urgent-list td[data-label="標題 / 位置"],
+  #urgent-list td[data-label="風險"],
+  #urgent-list td[data-label="狀態"] { grid-column: 2; display: block; padding: 3px 12px; text-align: left; }
+  #urgent-list td[data-label="標題 / 位置"]::before,
+  #urgent-list td[data-label="風險"]::before,
+  #urgent-list td[data-label="狀態"]::before { display: none; }
 }
 
 /* ---------- Mobile inspection form (390px design) ---------- */
@@ -894,18 +921,79 @@ table.data-table tbody tr.row-link { cursor: pointer; }
 .timeline-item .t-meta { font-size: 11.5px; color: var(--color-text-faint); margin-top: 2px; }
 .timeline-item .t-note { font-size: 12.5px; color: var(--color-text-muted); margin-top: 5px; background: var(--color-surface-sunken); border-radius: var(--radius-md); padding: 8px 10px; }
 
-/* ---------- Photo compare ---------- */
+/* ==========================================================================
+   On-site photo evidence — thumbnails, before/after cards, lightbox, empty
+   state. Operational (identify a location/fixture/problem), never decorative.
+   ========================================================================== */
 
-.photo-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.photo-compare figure { margin: 0; }
-.photo-compare .ph-box { position: relative; aspect-ratio: 4/3; border-radius: var(--radius-md); background: var(--color-surface-sunken); border: 1px solid var(--color-border); display: flex; align-items: center; justify-content: center; font-size: 42px; overflow: hidden; }
-.photo-compare figcaption { font-size: 11.5px; color: var(--color-text-faint); margin-top: 5px; text-align: center; font-weight: 600; }
-.ph-demo-flag {
-  position: absolute; top: 6px; left: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
-  color: #fff; background: rgba(20, 32, 28, 0.72); padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+/* Small clickable thumbnail (Dashboard urgent-table 現場 column, map popover).
+   Fixed dimensions are set by the specific usage (.workorder-thumbnail below,
+   or an inline width/height for the map popover) so layout never shifts. */
+.photo-thumbnail-button {
+  display: block; padding: 0; border: 1px solid var(--color-border-strong); border-radius: 4px;
+  overflow: hidden; cursor: pointer; background: var(--color-surface-sunken); flex-shrink: 0; position: relative;
 }
-.photo-demo-note { font-size: 11.5px; color: var(--color-text-faint); margin-top: -6px; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
-.photo-demo-note svg { width: 13px; height: 13px; flex-shrink: 0; }
+.photo-thumbnail-button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumbnail-button:hover { border-color: var(--color-primary); }
+.photo-thumbnail-button:hover::after {
+  content: ""; position: absolute; inset: 0; background: rgba(11, 58, 53, 0.15);
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>');
+  background-repeat: no-repeat; background-position: center; background-size: 40%;
+}
+.photo-thumbnail-button:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
+
+.workorder-thumbnail { width: 48px; height: 48px; }
+
+/* Dashboard urgent-table 現場 column header/cell shouldn't force the table wider */
+td[data-label="現場"] { width: 64px; }
+
+/* Problem/completion side-by-side grid — 2 cols desktop, 1 col mobile */
+.photo-evidence-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .photo-evidence-grid { grid-template-columns: 1fr; } }
+
+.photo-evidence-card { display: flex; flex-direction: column; gap: 8px; }
+.photo-evidence-card .pe-heading { font-size: 13px; font-weight: 700; }
+.photo-evidence-card .photo-thumbnail-button {
+  width: 100%; aspect-ratio: 4/3; border-radius: 6px; border-color: var(--color-border);
+}
+.photo-evidence-card .pe-meta { font-size: 12px; color: var(--color-text-muted); display: flex; flex-direction: column; gap: 2px; }
+.photo-evidence-card .pe-meta .pe-by { font-weight: 600; color: var(--color-text-soft); }
+
+.photo-demo-badge {
+  position: absolute; top: 6px; left: 6px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+  color: #fff; background: rgba(11, 58, 53, 0.78); padding: 2px 7px; border-radius: 999px; text-transform: uppercase;
+  pointer-events: none;
+}
+.photo-evidence-note { font-size: 11.5px; color: var(--color-text-faint); margin: -4px 0 14px; display: flex; align-items: center; gap: 5px; }
+.photo-evidence-note svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* Empty state sized to sit in the same 4:3 slot a real photo would occupy */
+.photo-empty-state {
+  aspect-ratio: 4/3; border-radius: 6px; border: 1.5px dashed var(--color-border-strong); background: var(--color-surface-sunken);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--color-text-faint); text-align: center; padding: 10px;
+}
+.photo-empty-state svg { width: 26px; height: 26px; }
+.photo-empty-state span { font-size: 12px; font-weight: 600; }
+/* Failed-to-load state reuses the same slot/box so a broken photo never
+   collapses to a broken-image glyph */
+.photo-empty-state.is-error { border-style: solid; border-color: var(--color-danger-border); background: var(--color-danger-bg); color: var(--color-danger); }
+
+/* ---------- Photo lightbox (shared modal reused by dashboard/map/detail) ---------- */
+
+.photo-lightbox .modal { width: 720px; max-width: 100%; padding: 0; overflow: hidden; }
+.photo-lightbox-media { width: 100%; aspect-ratio: 4/3; background: var(--color-surface-sunken); }
+.photo-lightbox-media img { width: 100%; height: 100%; object-fit: contain; background: #14201c; }
+.photo-lightbox-body { padding: 18px 20px; }
+.photo-lightbox-body h3 { font-size: 15px; margin-bottom: 8px; padding-right: 24px; }
+.photo-lightbox-tags { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.photo-lightbox-meta { font-size: 12.5px; color: var(--color-text-muted); }
+.photo-lightbox-meta .pl-by { font-weight: 600; color: var(--color-text-soft); }
+.photo-lightbox-close {
+  position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%;
+  border: none; background: rgba(20, 32, 28, 0.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2;
+}
+.photo-lightbox-close:hover { background: rgba(20, 32, 28, 0.75); }
+.photo-lightbox-close svg { width: 16px; height: 16px; }
 
 /* ---------- Detail two-col layout ---------- */
 

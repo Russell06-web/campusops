@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>問題通報 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807c">
+<link rel="stylesheet" href="css/style.css?v=20260808a">
 </head>
 <body data-page="report-issue" data-roles="manager,reporter">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -37,9 +37,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260807c"></script>
-<script src="js/data.js?v=20260807c"></script>
-<script src="js/shell.js?v=20260807c"></script>
+<script src="js/main.js?v=20260808a"></script>
+<script src="js/data.js?v=20260808a"></script>
+<script src="js/shell.js?v=20260808a"></script>
 <script>
 (function () {
   "use strict";
@@ -155,7 +155,12 @@
       riskLevel: "caution", status: "pending", priority: "中",
       assignee: "", assigneeOrg: "",
       createdAt: new Date().toISOString(), slaDueAt: D.daysFromNow(3, 18, 0),
-      photosBefore: photos.filter(Boolean).length, photosAfter: 0,
+      photos: {
+        issue: photos.filter(Boolean).map(function (dataUrl) {
+          return D.makePhoto({ src: dataUrl, alt: bld.name + " " + location + " " + fac.name + "問題通報照片", capturedBy: reporterName, label: "問題照片" });
+        }),
+        completion: []
+      },
       history: [{ time: new Date().toISOString(), actor: reporterName, action: "建立工單", note: "由校內通報建立" }]
     });
     D.set("workOrders", workOrders);

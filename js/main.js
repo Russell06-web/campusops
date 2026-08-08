@@ -146,6 +146,82 @@
   });
 
   // ------------------------------------------------------------------
+  // Photo evidence: thumbnail buttons + one shared lightbox dialog.
+  // Reused by dashboard (urgent table), map (marker popover), and
+  // workorder-detail (before/after grid) — nobody re-implements this.
+  // ------------------------------------------------------------------
+  var LIGHTBOX_ID = "photo-lightbox-backdrop";
+
+  function ensurePhotoLightbox() {
+    if (document.getElementById(LIGHTBOX_ID)) return;
+    document.body.insertAdjacentHTML("beforeend",
+      '<div class="modal-backdrop photo-lightbox" id="' + LIGHTBOX_ID + '">' +
+        '<div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="photo-lightbox-title">' +
+          '<button type="button" class="photo-lightbox-close" data-modal-close aria-label="關閉照片檢視">' + icon("x") + "</button>" +
+          '<div class="photo-lightbox-media"><img id="photo-lightbox-img" src="" alt=""></div>' +
+          '<div class="photo-lightbox-body">' +
+            '<h3 id="photo-lightbox-title"></h3>' +
+            '<div class="photo-lightbox-tags" id="photo-lightbox-tags"></div>' +
+            '<div class="photo-lightbox-meta" id="photo-lightbox-meta"></div>' +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  // photo: { src, alt, label, capturedBy, capturedAt, demo }
+  function openLightbox(photo) {
+    ensurePhotoLightbox();
+    var img = document.getElementById("photo-lightbox-img");
+    img.src = photo.src;
+    img.alt = photo.alt || "";
+    document.getElementById("photo-lightbox-title").textContent = photo.alt || "現場照片";
+    var tagsHtml = "";
+    if (photo.label) tagsHtml += '<span class="badge badge-neutral">' + photo.label + "</span>";
+    if (photo.demo) tagsHtml += '<span class="badge badge-caution">示意照片</span>';
+    document.getElementById("photo-lightbox-tags").innerHTML = tagsHtml;
+    var metaBits = [];
+    if (photo.capturedBy) metaBits.push('<span class="pl-by">' + photo.capturedBy + "</span>");
+    if (photo.capturedAt) {
+      try { metaBits.push(new Date(photo.capturedAt).toLocaleString("zh-TW", { hour12: false })); } catch (e) { /* ignore */ }
+    }
+    document.getElementById("photo-lightbox-meta").innerHTML = metaBits.join(" · ");
+    // openModal() captures document.activeElement (the thumbnail just
+    // clicked) as the focus-return target, so no extra bookkeeping needed here.
+    openModal(LIGHTBOX_ID);
+  }
+
+  // Renders a <button class="photo-thumbnail-button ..."> for a photo object
+  // and wires its click (and its keyboard activation, for free, since it's a
+  // real <button>) to open the shared lightbox. Caller inserts the returned
+  // element; photo stays a live JS reference via closure, not re-parsed from HTML.
+  function renderPhotoThumbnail(photo, opts) {
+    opts = opts || {};
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "photo-thumbnail-button" + (opts.extraClass ? " " + opts.extraClass : "");
+    btn.setAttribute("aria-label", "放大查看：" + (photo.alt || "現場照片"));
+    var img = document.createElement("img");
+    img.src = photo.src; img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+    img.setAttribute("aria-hidden", "true");
+    img.addEventListener("error", function () {
+      btn.innerHTML = "";
+      btn.classList.add("photo-empty-state", "is-error");
+      btn.innerHTML = icon("alertOctagon") + "<span>照片載入失敗</span>";
+      btn.disabled = true;
+    });
+    btn.appendChild(img);
+    btn.addEventListener("click", function () { openLightbox(photo); });
+    return btn;
+  }
+
+  // Empty-state placeholder matching a photo slot's footprint, for when a
+  // work order genuinely has no photo yet — never a broken-image glyph.
+  function photoEmptyStateHtml(message) {
+    return '<div class="photo-empty-state">' + icon("image") + "<span>" + (message || "尚無照片") + "</span></div>";
+  }
+
+  // ------------------------------------------------------------------
   // Query-param driven demo state (?demo=loading|error|empty)
   // ------------------------------------------------------------------
   function demoStateParam() {
@@ -319,6 +395,7 @@
     trapFocusIn: trapFocusIn, releaseFocusTrap: releaseFocusTrap,
     demoStateParam: demoStateParam,
     stateBlockHtml: stateBlockHtml,
-    TableController: TableController
+    TableController: TableController,
+    openLightbox: openLightbox, renderPhotoThumbnail: renderPhotoThumbnail, photoEmptyStateHtml: photoEmptyStateHtml
   };
 })();

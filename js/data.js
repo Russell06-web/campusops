@@ -94,11 +94,11 @@
 
   var WO_SEED = [
     { b: "B", floor: "3F", loc: "301 教室", type: "lighting", title: "教室日光燈管閃爍", desc: "上課期間日光燈管持續閃爍，疑似啟動器老化，影響授課品質。", source: "inspection", risk: "caution", status: "pending", priority: "中", assignee: "陳建宏", createdOffset: -1, slaOffset: 2 },
-    { b: "C", floor: "2F", loc: "男廁", type: "plumbing", title: "男廁水龍頭持續漏水", desc: "洗手台水龍頭關閉後仍持續滴水，地面偶有積水，有滑倒疑慮。", source: "report", reporter: "學生／王同學", risk: "high", status: "assigned", priority: "高", assignee: "大安水電行", createdOffset: -2, slaOffset: 1 },
+    { b: "C", floor: "2F", loc: "男廁", type: "plumbing", title: "男廁水龍頭持續漏水", desc: "洗手台水龍頭關閉後仍持續滴水，地面偶有積水，有滑倒疑慮。", source: "report", reporter: "學生／王同學", risk: "high", status: "done", priority: "高", assignee: "大安水電行", createdOffset: -2, slaOffset: 1 },
     { b: "D", floor: "1F", loc: "大廳電梯 A", type: "elevator", title: "電梯運行時異音伴隨停頓", desc: "電梯上下樓時發出異音，並曾於 2 樓短暫停頓約 3 秒後才恢復運行。", source: "inspection", risk: "high", status: "inprogress", priority: "高", assignee: "新光電梯保養公司", createdOffset: -3, slaOffset: -1 },
-    { b: "F", floor: "1F", loc: "逃生通道", type: "fire", title: "逃生方向指示燈不亮", desc: "西側逃生通道指示燈完全不亮，緊急照明功能失效。", source: "inspection", risk: "overdue", status: "inprogress", priority: "高", assignee: "永固消防器材行", createdOffset: -5, slaOffset: -2 },
+    { b: "F", floor: "1F", loc: "逃生通道", type: "fire", title: "逃生方向指示燈不亮", desc: "西側逃生通道指示燈完全不亮，緊急照明功能失效。", source: "inspection", risk: "overdue", status: "review", priority: "高", assignee: "永固消防器材行", createdOffset: -5, slaOffset: -2 },
     { b: "A", floor: "2F", loc: "洽公大廳", type: "hvac", title: "空調出風口滴水", desc: "冷氣出風口凝結水滴落，天花板出現水漬痕跡。", source: "report", reporter: "行政人員／陳小姐", risk: "caution", status: "pending", priority: "中", assignee: "冷暖佳空調工程", createdOffset: 0, slaOffset: 3 },
-    { b: "E", floor: "1F", loc: "社團辦公室走廊", type: "accessibility", title: "無障礙坡道地磚破損翹起", desc: "坡道入口處地磚破損翹起約 1 公分高低差，輪椅通行有絆倒風險。", source: "inspection", risk: "high", status: "assigned", priority: "高", assignee: "陳建宏", createdOffset: -1, slaOffset: 1 },
+    { b: "E", floor: "1F", loc: "社團辦公室走廊", type: "accessibility", title: "無障礙坡道地磚破損翹起", desc: "坡道入口處地磚破損翹起約 1 公分高低差，輪椅通行有絆倒風險。", source: "inspection", risk: "high", status: "review", priority: "高", assignee: "陳建宏", createdOffset: -1, slaOffset: 1 },
     { b: "B", floor: "5F", loc: "507 教室", type: "hvac", title: "空調運轉異音", desc: "定期巡檢發現空調室內機運轉時有輕微異音，已排除並測試正常。", source: "inspection", risk: "normal", status: "done", priority: "低", assignee: "林志成", createdOffset: -10, slaOffset: -8 },
     { b: "C", floor: "4F", loc: "走廊", type: "lighting", title: "走廊感應燈延遲亮起", desc: "人員經過後燈具延遲約 5 秒才亮起，已更換感應器模組。", source: "inspection", risk: "normal", status: "done", priority: "低", assignee: "陳建宏", createdOffset: -9, slaOffset: -7 },
     { b: "D", floor: "5F", loc: "自習室外", type: "fire", title: "滅火器逾期未檢", desc: "定期巡檢發現滅火器檢驗合格證已逾期 2 個月，需立即更換或送檢。", source: "inspection", risk: "overdue", status: "pending", priority: "高", assignee: "永固消防器材行", createdOffset: -6, slaOffset: -3 },
@@ -118,6 +118,58 @@
     { b: "F", floor: "1F", loc: "無障礙廁所", type: "accessibility", title: "扶手鬆動", desc: "無障礙廁所側邊扶手螺絲鬆脫，施力時會晃動，有安全疑慮。", source: "inspection", risk: "high", status: "review", priority: "高", assignee: "陳建宏", createdOffset: -3, slaOffset: -1 },
     { b: "E", floor: "1F", loc: "社團辦公室", type: "plumbing", title: "電源總開關跳電", desc: "社團辦公室電源總開關頻繁跳電，現場負責人反映已影響設備使用。", source: "report", reporter: "社團幹部通報", risk: "overdue", status: "rejected", priority: "高", assignee: "大安水電行", createdOffset: -5, slaOffset: -3, rejectNote: "廠商到場時辦公室無人在場、空間上鎖無法進入現場檢查，需社團重新協調可到場時間。" }
   ];
+
+  // ---------------------------------------------------------------
+  // Demo on-site photos — deliberately only a handful of real, operationally
+  // useful pairs (not every work order gets a photo; most legitimately have
+  // none, which exercises the empty state). Keyed by WO_SEED array index so
+  // it stays next to the scenario it documents. Single source of truth read
+  // by dashboard/map/workorder-detail — nobody else hardcodes a photo path.
+  var PHOTO_DIR = "assets/photos/";
+  var PHOTO_SEED = {
+    1: { // WO-2026-0002 — 教學大樓二館 2F 男廁 水龍頭持續漏水 (status: done)
+      issue: [{ file: "leaking-faucet-before.webp", alt: "教學大樓二館 2F 男廁水龍頭持續漏水，地面有積水", by: "學生／王同學", offset: [-2, 8, 40] }],
+      completion: [{ file: "leaking-faucet-after.webp", alt: "教學大樓二館 2F 男廁水龍頭維修後，接縫已更換不再滴水", by: "大安水電行", offset: [-1, 16, 40] }]
+    },
+    3: { // WO-2026-0004 — 綜合體育館 1F 逃生通道 逃生方向指示燈不亮 (status: review)
+      issue: [{ file: "exit-sign-before.webp", alt: "綜合體育館 1F 逃生通道方向指示燈完全不亮", by: "周雅婷", offset: [-5, 8, 55] }],
+      completion: [{ file: "exit-sign-after.webp", alt: "綜合體育館 1F 逃生通道方向指示燈維修後恢復正常照明", by: "永固消防器材行", offset: [-4, 16, 40] }]
+    },
+    5: { // WO-2026-0006 — 學生活動中心 1F 社團辦公室走廊 無障礙坡道地磚翹起 (status: review)
+      issue: [{ file: "broken-ramp-before.webp", alt: "學生活動中心 1F 社團辦公室走廊無障礙坡道地磚翹起，有絆倒風險", by: "李佳穎", offset: [-1, 9, 15] }],
+      completion: [{ file: "broken-ramp-after.webp", alt: "學生活動中心 1F 無障礙坡道地磚修復後與周邊齊平", by: "陳建宏", offset: [0, 16, 40] }]
+    },
+    13: { // WO-2026-0014 — 教學大樓二館 1F 電梯間 電梯門夾感應異常 (status: review)
+      issue: [{ file: "elevator-sensor-before.webp", alt: "教學大樓二館 1F 電梯門夾感應異常，面板顯示故障燈號", by: "張家豪", offset: [-5, 10, 0] }],
+      completion: [{ file: "elevator-sensor-after.webp", alt: "教學大樓二館 1F 電梯門夾感應器更換後測試正常", by: "新光電梯保養公司", offset: [-4, 16, 40] }]
+    },
+    4: { // WO-2026-0005 — 行政大樓 2F 洽公大廳 空調出風口滴水 (status: pending — no completion photo yet, exercises empty state)
+      issue: [{ file: "ac-drip-before.webp", alt: "行政大樓 2F 洽公大廳空調出風口凝結水滴落，天花板有水漬", by: "行政人員／陳小姐", offset: [0, 9, 20] }],
+      completion: []
+    },
+    8: { // WO-2026-0009 — 圖書資訊館 5F 自習室外 滅火器逾期未檢 (status: pending — no completion photo yet)
+      issue: [{ file: "extinguisher-before.webp", alt: "圖書資訊館 5F 自習室外滅火器檢驗合格證已逾期", by: "李佳穎", offset: [-6, 9, 30] }],
+      completion: []
+    }
+  };
+  function buildPhotoList(entries) {
+    return (entries || []).map(function (p) {
+      return {
+        src: PHOTO_DIR + p.file,
+        alt: p.alt,
+        capturedAt: daysFromNow(p.offset[0], p.offset[1], p.offset[2]),
+        capturedBy: p.by,
+        label: null, // filled in below per issue/completion
+        demo: true
+      };
+    });
+  }
+  function buildPhotos(idx) {
+    var seed = PHOTO_SEED[idx];
+    var issue = buildPhotoList(seed && seed.issue).map(function (p) { p.label = "問題照片"; return p; });
+    var completion = buildPhotoList(seed && seed.completion).map(function (p) { p.label = "完工照片"; return p; });
+    return { issue: issue, completion: completion };
+  }
 
   function buildWorkOrders() {
     return WO_SEED.map(function (seed, idx) {
@@ -167,8 +219,7 @@
         assigneeOrg: person.org || "",
         createdAt: createdAt,
         slaDueAt: slaDueAt,
-        photosBefore: seed.status === "pending" ? 0 : 1 + (idx % 2),
-        photosAfter: ["review", "done"].indexOf(seed.status) !== -1 ? 1 + (idx % 2) : 0,
+        photos: buildPhotos(idx),
         history: history
       };
     });
@@ -313,13 +364,28 @@
     return "WO-2026-" + String(max + 1).padStart(4, "0");
   }
 
+  // Shape a freshly-captured (non-seed) photo the same way as the demo set,
+  // so every consumer (dashboard/map/detail/lightbox) can treat wo.photos.*
+  // entries uniformly regardless of source. demo:false — no "Demo" flag on
+  // a photo the user actually just uploaded this session.
+  function makePhoto(opts) {
+    return {
+      src: opts.src,
+      alt: opts.alt,
+      capturedAt: opts.capturedAt || new Date().toISOString(),
+      capturedBy: opts.capturedBy,
+      label: opts.label,
+      demo: false
+    };
+  }
+
   window.CO_DATA = {
     BUILDINGS: BUILDINGS, building: building,
     FACILITY_TYPES: FACILITY_TYPES, facility: facility,
     RISK_LEVELS: RISK_LEVELS, STATUS_META: STATUS_META,
     STAFF: STAFF, allAssignees: allAssignees, findAssignee: findAssignee,
     load: load, save: save, set: set, resetAll: resetAll,
-    nextWorkOrderId: nextWorkOrderId,
+    nextWorkOrderId: nextWorkOrderId, makePhoto: makePhoto,
     fmtDate: fmtDate, fmtDateTime: fmtDateTime, fmtTime: fmtTime, daysFromNow: daysFromNow
   };
 })();

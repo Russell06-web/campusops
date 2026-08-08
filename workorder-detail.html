@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>工單詳情 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807c">
+<link rel="stylesheet" href="css/style.css?v=20260808a">
 </head>
 <body data-page="workorders" data-roles="manager,tech">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -19,9 +19,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260807c"></script>
-<script src="js/data.js?v=20260807c"></script>
-<script src="js/shell.js?v=20260807c"></script>
+<script src="js/main.js?v=20260808a"></script>
+<script src="js/data.js?v=20260808a"></script>
+<script src="js/shell.js?v=20260808a"></script>
 <script>
 (function () {
   "use strict";
@@ -53,7 +53,7 @@
     return;
   }
 
-  var afterPhotosLocal = [];
+  var afterPhotosLocal = []; // freshly-uploaded photo objects (D.makePhoto shape), merged into wo.photos.completion on 送出驗收
 
   function riskOptionsHtml(selected) {
     return Object.keys(D.RISK_LEVELS).map(function (k) { return '<option value="' + k + '"' + (k === selected ? " selected" : "") + '>' + D.RISK_LEVELS[k].label + "</option>"; }).join("");
@@ -78,24 +78,36 @@
     }).join("") + "</div>";
   }
 
-  function photoBox(has, emoji) {
-    return '<div class="ph-box">' + (has ? '<span class="ph-demo-flag">Demo</span>' + emoji : '<span class="text-faint" style="font-size:12px;">尚無照片</span>') + "</div>";
+  // Renders one photo's thumbnail (opens the shared lightbox) + its caption
+  // (示意照片 tag if demo, capturedBy, capturedAt) as a single evidence unit.
+  function renderEvidenceUnit(container, photo) {
+    var unit = document.createElement("div");
+    unit.className = "mb-8";
+    var btn = CO.renderPhotoThumbnail(photo, { extraClass: "" });
+    btn.style.width = "100%";
+    btn.style.aspectRatio = "4/3";
+    btn.style.borderRadius = "6px";
+    if (photo.demo) btn.insertAdjacentHTML("beforeend", '<span class="photo-demo-badge">示意照片</span>');
+    unit.appendChild(btn);
+    var meta = document.createElement("div");
+    meta.className = "pe-meta mt-8";
+    var capturedAtStr = "";
+    try { capturedAtStr = new Date(photo.capturedAt).toLocaleString("zh-TW", { hour12: false }); } catch (e) { /* ignore */ }
+    meta.innerHTML = (photo.capturedBy ? '<span class="pe-by">' + photo.capturedBy + "</span>" : "") + (capturedAtStr ? "<span>" + capturedAtStr + "</span>" : "");
+    unit.appendChild(meta);
+    container.appendChild(unit);
+  }
+
+  function mountEvidenceSide(mountId, photos, emptyMessage) {
+    var el = document.getElementById(mountId);
+    if (!el) return;
+    el.innerHTML = "";
+    if (!photos.length) { el.innerHTML = CO.photoEmptyStateHtml(emptyMessage); return; }
+    photos.forEach(function (p) { renderEvidenceUnit(el, p); });
   }
 
   function render() {
     var risk = D.RISK_LEVELS[wo.riskLevel], status = D.STATUS_META[wo.status];
-
-    var beforeFigs = "";
-    for (var i = 0; i < Math.max(wo.photosBefore, 1); i++) {
-      beforeFigs += '<figure>' + photoBox(i < wo.photosBefore, "📷") + '<figcaption>問題照片 ' + (i + 1) + "</figcaption></figure>";
-    }
-    var afterCount = wo.photosAfter + afterPhotosLocal.length;
-    var afterFigs = "";
-    for (var j = 0; j < Math.max(afterCount, 1); j++) {
-      var localPhoto = afterPhotosLocal[j - wo.photosAfter];
-      var content = j < wo.photosAfter ? "✅" : (localPhoto ? '<img src="' + localPhoto + '" style="width:100%;height:100%;object-fit:cover;">' : "");
-      afterFigs += '<figure>' + photoBox(j < afterCount, content) + '<figcaption>完工照片 ' + (j + 1) + "</figcaption></figure>";
-    }
 
     var historyHtml = wo.history.slice().reverse().map(function (h, i, arr) {
       return (
@@ -143,10 +155,11 @@
           "</div></div>" +
 
           '<div class="card mb-16"><div class="card-header"><h3>問題照片與完工照片</h3></div><div class="card-body">' +
-            '<p class="photo-demo-note">' + ico("alertTriangle") + "以下標示「Demo」的照片為示範用示意圖，非本案實際案發現場影像。</p>" +
-            '<div class="grid-2">' +
-              '<div><h4 class="text-sm" style="margin-bottom:8px;font-weight:700;">問題照片（巡檢／通報上傳）</h4><div class="photo-compare">' + beforeFigs + "</div></div>" +
-              '<div><h4 class="text-sm" style="margin-bottom:8px;font-weight:700;">完工照片（維修後上傳）</h4><div class="photo-compare">' + afterFigs + "</div>" +
+            (wo.photos.issue.concat(wo.photos.completion).some(function (p) { return p.demo; }) ?
+              '<p class="photo-evidence-note">' + ico("alertTriangle") + "標示「示意照片」的圖片為示範用途，非本案實際案發現場影像。</p>" : "") +
+            '<div class="photo-evidence-grid">' +
+              '<div class="photo-evidence-card"><div class="pe-heading">問題照片（巡檢／通報上傳）</div><div id="issue-photo-mount"></div></div>' +
+              '<div class="photo-evidence-card"><div class="pe-heading">完工照片（維修後上傳）</div><div id="completion-photo-mount"></div>' +
               (canFinishReview || (role === "tech" && wo.status === "inprogress") ? '<button type="button" class="btn btn-secondary btn-sm mt-12" id="btn-add-after-photo">' + ico("camera") + "新增完工照片</button><input type=\"file\" accept=\"image/*\" capture=\"environment\" id=\"after-photo-input\" class=\"hidden\">" : "") +
               "</div>" +
             "</div>" +
@@ -182,6 +195,8 @@
         '<div class="modal-actions"><button type="button" class="btn btn-ghost" data-modal-close>取消</button><button type="button" class="btn btn-danger" id="confirm-reject-btn">確認退回</button></div>' +
       "</div></div>";
 
+    mountEvidenceSide("issue-photo-mount", wo.photos.issue, "尚無問題照片");
+    mountEvidenceSide("completion-photo-mount", wo.photos.completion.concat(afterPhotosLocal), "完工照片尚未上傳");
     bindActions();
   }
 
@@ -224,15 +239,25 @@
       var file = e.target.files[0];
       if (!file) return;
       var reader = new FileReader();
-      reader.onload = function (evt) { afterPhotosLocal.push(evt.target.result); CO.toast("完工照片已上傳", "success"); render(); };
+      reader.onload = function (evt) {
+        afterPhotosLocal.push(D.makePhoto({
+          src: evt.target.result,
+          alt: wo.title + "（" + wo.buildingName + " " + wo.floor + " " + wo.location + "）完工照片",
+          capturedBy: wo.assignee || D.STAFF.manager.name,
+          label: "完工照片"
+        }));
+        CO.toast("完工照片已上傳", "success");
+        render();
+      };
       reader.readAsDataURL(file);
+      afterPhotoInput.value = "";
     });
 
     var toReviewBtn = document.getElementById("btn-to-review");
     if (toReviewBtn) toReviewBtn.addEventListener("click", function () {
-      if (wo.photosAfter + afterPhotosLocal.length < 1) { CO.toast("請至少上傳 1 張完工照片再送出驗收", "error"); return; }
+      if (wo.photos.completion.length + afterPhotosLocal.length < 1) { CO.toast("請至少上傳 1 張完工照片再送出驗收", "error"); return; }
       wo.status = "review";
-      wo.photosAfter += afterPhotosLocal.length; afterPhotosLocal = [];
+      wo.photos.completion = wo.photos.completion.concat(afterPhotosLocal); afterPhotosLocal = [];
       pushHistory("完成維修並送審", "已上傳完工照片，等待管理者驗收");
       persist(); CO.toast("已送出驗收", "success"); render();
     });

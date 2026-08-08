@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>營運總覽 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260807c">
+<link rel="stylesheet" href="css/style.css?v=20260808a">
 </head>
 <body data-page="dashboard" data-roles="manager">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -83,9 +83,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260807c"></script>
-<script src="js/data.js?v=20260807c"></script>
-<script src="js/shell.js?v=20260807c"></script>
+<script src="js/main.js?v=20260808a"></script>
+<script src="js/data.js?v=20260808a"></script>
+<script src="js/shell.js?v=20260808a"></script>
 <script>
 (function () {
   "use strict";
@@ -279,6 +279,7 @@
       var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
       return (
         '<tr class="row-link" data-row-id="' + w.id + '">' +
+        '<td data-label="現場" class="urgent-photo-cell" data-wo-id="' + w.id + '"></td>' +
         '<td data-label="工單編號"><span class="cell-mono">' + w.id + "</span></td>" +
         '<td data-label="標題 / 位置"><span class="cell-primary">' + w.title + '</span><div class="cell-muted">' + w.buildingName + " " + w.floor + " " + w.location + "</div></td>" +
         '<td data-label="類型">' + w.facilityLabel + "</td>" +
@@ -290,11 +291,29 @@
     }).join("");
     urgentMount.innerHTML =
       '<div class="table-scroll"><table class="data-table table-responsive-stack">' +
-      "<thead><tr><th>工單編號</th><th>標題 / 位置</th><th>類型</th><th>風險</th><th>狀態</th><th>SLA 期限</th></tr></thead>" +
+      "<thead><tr><th>現場</th><th>工單編號</th><th>標題 / 位置</th><th>類型</th><th>風險</th><th>狀態</th><th>SLA 期限</th></tr></thead>" +
       "<tbody>" + rowsHtml + "</tbody>" +
       "</table></div>";
+
+    // Only the first problem photo, only for the (already-limited) rows shown
+    // here — never every work order's whole photo set on page load.
+    urgent.forEach(function (w) {
+      var cell = urgentMount.querySelector('.urgent-photo-cell[data-wo-id="' + w.id + '"]');
+      if (!cell) return;
+      var firstPhoto = w.photos && w.photos.issue && w.photos.issue[0];
+      if (firstPhoto) {
+        var btn = CO.renderPhotoThumbnail(firstPhoto, { extraClass: "workorder-thumbnail" });
+        cell.appendChild(btn);
+      } else {
+        cell.innerHTML = '<div class="photo-empty-state workorder-thumbnail" style="padding:0;" title="尚無現場照片">' + ico("image") + "</div>";
+      }
+    });
+
     urgentMount.querySelectorAll("tr.row-link").forEach(function (tr) {
-      tr.addEventListener("click", function () { window.location.href = "workorder-detail.html?id=" + tr.getAttribute("data-row-id"); });
+      tr.addEventListener("click", function (e) {
+        if (e.target.closest(".photo-thumbnail-button")) return;
+        window.location.href = "workorder-detail.html?id=" + tr.getAttribute("data-row-id");
+      });
     });
   }
 
