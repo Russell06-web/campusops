@@ -54,6 +54,9 @@
     high: { label: "高風險", badge: "badge-risk", markerClass: "risk-high" },
     overdue: { label: "逾期", badge: "badge-danger", markerClass: "risk-overdue" }
   };
+  // Worst-first ordering shared by the facility map and the Dashboard hotspot
+  // widget, so a clustered marker always surfaces the same "worst" work order.
+  var RISK_ORDER = { overdue: 0, high: 1, caution: 2, normal: 3 };
 
   var STATUS_META = {
     pending: { label: "待分派", badge: "badge-neutral", step: 0 },
@@ -382,7 +385,7 @@
   window.CO_DATA = {
     BUILDINGS: BUILDINGS, building: building,
     FACILITY_TYPES: FACILITY_TYPES, facility: facility,
-    RISK_LEVELS: RISK_LEVELS, STATUS_META: STATUS_META,
+    RISK_LEVELS: RISK_LEVELS, RISK_ORDER: RISK_ORDER, STATUS_META: STATUS_META,
     STAFF: STAFF, allAssignees: allAssignees, findAssignee: findAssignee,
     load: load, save: save, set: set, resetAll: resetAll,
     nextWorkOrderId: nextWorkOrderId, makePhoto: makePhoto,

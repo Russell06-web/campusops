@@ -58,7 +58,8 @@
     checkSquare: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
     navigation: '<path d="m3 11 19-9-9 19-2-8-8-2Z"/>',
     trendUp: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
-    trendDown: '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>'
+    trendDown: '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/>',
+    moreVertical: '<circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/>'
   };
 
   function icon(key, cls) {
@@ -219,6 +220,43 @@
   // work order genuinely has no photo yet — never a broken-image glyph.
   function photoEmptyStateHtml(message) {
     return '<div class="photo-empty-state">' + icon("image") + "<span>" + (message || "尚無照片") + "</span></div>";
+  }
+
+  // ------------------------------------------------------------------
+  // Shared work-order map-popover markup — used by both the full facility
+  // map (map.html) and the Dashboard hotspot widget, so the two surfaces
+  // never drift into two different popover designs. Returns { html,
+  // firstPhoto }: caller sets popover.innerHTML = html, then (if firstPhoto)
+  // appends a renderPhotoThumbnail() button into the [data-mp-photo-mount]
+  // slot itself — a real photo button can't be serialized into a string.
+  function workOrderPopoverHtml(w, D) {
+    var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
+    var firstPhoto = w.photos && w.photos.issue && w.photos.issue[0];
+    var html =
+      '<button type="button" class="mp-close" data-mp-close aria-label="關閉">' + icon("x") + "</button>" +
+      "<h4>" + w.title + "</h4>" +
+      (firstPhoto ? '<div class="mp-photo-mount" data-mp-photo-mount style="margin-bottom:8px;"></div>' : "") +
+      '<div class="mp-meta">' +
+      "<span>" + w.buildingName + " " + w.floor + " · " + w.location + "</span>" +
+      "<span>" + w.facilityLabel + " · " + w.sourceLabel + (w.reporterName ? "（" + w.reporterName + "）" : "") + "</span>" +
+      "<span>SLA 期限：" + D.fmtDate(w.slaDueAt) + "</span>" +
+      "</div>" +
+      '<div class="flex gap-6" style="margin-bottom:10px;"><span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + '</span><span class="badge ' + status.badge + '">' + status.label + "</span></div>" +
+      '<a class="btn btn-primary btn-sm btn-block" href="workorder-detail.html?id=' + w.id + '">查看工單詳情</a>';
+    return { html: html, firstPhoto: firstPhoto };
+  }
+
+  // Mounts the photo button referenced by workOrderPopoverHtml()'s
+  // [data-mp-photo-mount] slot, sized for the map/hotspot popover footprint.
+  function mountPopoverPhoto(popoverEl, photo) {
+    var mount = popoverEl.querySelector("[data-mp-photo-mount]");
+    if (!mount || !photo) return;
+    var btn = renderPhotoThumbnail(photo);
+    btn.style.width = "120px";
+    btn.style.height = "80px";
+    btn.style.borderRadius = "6px";
+    if (photo.demo) btn.insertAdjacentHTML("beforeend", '<span class="photo-demo-badge" style="font-size:9px;padding:1px 5px;">示意</span>');
+    mount.appendChild(btn);
   }
 
   // ------------------------------------------------------------------
@@ -396,6 +434,7 @@
     demoStateParam: demoStateParam,
     stateBlockHtml: stateBlockHtml,
     TableController: TableController,
-    openLightbox: openLightbox, renderPhotoThumbnail: renderPhotoThumbnail, photoEmptyStateHtml: photoEmptyStateHtml
+    openLightbox: openLightbox, renderPhotoThumbnail: renderPhotoThumbnail, photoEmptyStateHtml: photoEmptyStateHtml,
+    workOrderPopoverHtml: workOrderPopoverHtml, mountPopoverPhoto: mountPopoverPhoto
   };
 })();

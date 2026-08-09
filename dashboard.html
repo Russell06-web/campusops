@@ -5,77 +5,73 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>營運總覽 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260809a">
+<link rel="stylesheet" href="css/style.css?v=20260809c">
 </head>
 <body data-page="dashboard" data-roles="manager">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
 <div class="app-shell">
   <div id="sidebar-mount"></div>
   <div class="main-col">
-    <header class="topbar" id="topbar-mount" data-title="營運總覽" data-breadcrumb="Dashboard"></header>
+    <header class="topbar" id="topbar-mount"></header>
     <div id="demo-banner-mount" class="demo-banner"></div>
     <main class="page" id="page-main" data-page-content>
-      <div class="page-header">
+      <div class="page-header dash-header">
         <div>
-          <div class="page-title">營運總覽</div>
-          <div class="page-subtitle">今日校園設施異常與工單處理狀況</div>
+          <h1 class="page-title">營運總覽</h1>
+          <div class="page-subtitle" id="dash-subtitle">全校設施與工單處理狀況</div>
         </div>
         <div class="page-actions">
           <a class="btn btn-secondary" href="map.html">查看校園設施分布圖</a>
           <a class="btn btn-primary" href="reports.html">前往稽核與報表</a>
         </div>
+        <div class="page-actions-menu">
+          <button type="button" class="icon-btn" data-menu-toggle aria-controls="dash-actions-menu" aria-haspopup="true" aria-expanded="false" aria-label="更多操作"></button>
+          <div class="role-menu" id="dash-actions-menu" style="right:0;">
+            <a class="role-menu-item" href="map.html"><span><span class="r-name">查看校園設施分布圖</span></span></a>
+            <a class="role-menu-item" href="reports.html"><span><span class="r-name">前往稽核與報表</span></span></a>
+          </div>
+        </div>
       </div>
 
+      <h2 class="visually-hidden">關鍵指標</h2>
       <div class="stats-grid" id="stats-grid"></div>
 
-      <div class="grid-3" style="margin-bottom:14px;">
-        <div class="card">
-          <div class="card-body">
-            <div class="stat-label">SLA 達成率</div>
-            <div class="stat-value" id="sla-rate-value" style="font-size:26px;margin-top:6px;">—</div>
-            <div class="stat-foot mt-8">未逾期完成 ÷ 全部工單</div>
-          </div>
+      <div class="dash-row-12 mb-16">
+        <div class="card dash-col-7 dash-hotspot-panel">
+          <div class="card-header"><h2>校園異常熱點圖</h2><a class="dash-panel-link" href="map.html">查看完整校園設施分布圖</a></div>
+          <div class="card-body" id="dash-hotspot-root" style="display:flex;flex-direction:column;flex:1;"></div>
         </div>
-        <div class="card">
-          <div class="card-body">
-            <div class="stat-label">平均處理時間</div>
-            <div class="stat-value" id="avg-handling-value" style="font-size:26px;margin-top:6px;">—</div>
-            <div class="stat-foot mt-8">建立到完工驗收的平均耗時</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body">
-            <div class="stat-label">校園建築</div>
-            <div class="stat-value" style="font-size:26px;margin-top:6px;">6 棟</div>
-            <div class="stat-foot mt-8">涵蓋消防／照明／空調／水電／電梯／無障礙 6 大類設施</div>
-          </div>
+        <div class="card dash-col-5 dash-urgent-panel">
+          <div class="card-header"><h2>需要立即處理</h2></div>
+          <div class="dash-urgent-list" id="dash-urgent-summary"></div>
+          <div class="urgent-mobile-more"><a class="btn btn-secondary btn-block" href="workorders.html">查看全部工單</a></div>
         </div>
       </div>
 
-      <div class="dashboard-tabs" role="tablist" aria-label="分析圖表切換">
-        <button type="button" role="tab" id="dtab-trend" aria-controls="panel-trend" aria-selected="true" tabindex="0" data-tab="trend">近 7 日趨勢</button>
-        <button type="button" role="tab" id="dtab-rank" aria-controls="panel-rank" aria-selected="false" tabindex="-1" data-tab="rank">建築排名</button>
-        <button type="button" role="tab" id="dtab-facility" aria-controls="panel-facility" aria-selected="false" tabindex="-1" data-tab="facility">設施分布</button>
-      </div>
-
-      <div class="grid-3 mb-16 analysis-row">
-        <div class="card tab-active" id="panel-trend" role="tabpanel" aria-labelledby="dtab-trend" tabindex="0">
-          <div class="card-header"><h3>近 7 日工單趨勢</h3></div>
+      <div class="dash-row-12 mb-16">
+        <div class="card dash-col-8">
+          <div class="card-header"><h2>近 7 日工單趨勢</h2></div>
           <div class="card-body" id="trend-chart"></div>
         </div>
-        <div class="card" id="panel-rank" role="tabpanel" aria-labelledby="dtab-rank" tabindex="0">
-          <div class="card-header"><h3>各建築物異常數量排名</h3><span class="text-faint text-sm">未結案</span></div>
-          <div class="card-body" id="building-rank"></div>
+        <div class="card dash-col-4">
+          <div class="card-header"><h2>營運效能</h2></div>
+          <div class="card-body" id="dash-efficiency"></div>
         </div>
-        <div class="card" id="panel-facility" role="tabpanel" aria-labelledby="dtab-facility" tabindex="0">
-          <div class="card-header"><h3>設施類型分布</h3></div>
-          <div class="card-body" id="facility-dist"></div>
+      </div>
+
+      <div class="card mb-16">
+        <h2 class="visually-hidden">次要分析</h2>
+        <div class="dash-analysis-tabs" role="tablist" aria-label="次要分析切換">
+          <button type="button" role="tab" id="atab-rank" aria-controls="apanel-rank" aria-selected="true" tabindex="0" data-tab="rank">建築排名</button>
+          <button type="button" role="tab" id="atab-facility" aria-controls="apanel-facility" aria-selected="false" tabindex="-1" data-tab="facility">設施類型</button>
         </div>
+        <div class="card-body" id="apanel-rank" role="tabpanel" aria-labelledby="atab-rank" tabindex="0"><div id="building-rank"></div></div>
+        <div class="card-body" id="apanel-facility" role="tabpanel" aria-labelledby="atab-facility" tabindex="0" hidden><div id="facility-dist"></div></div>
       </div>
 
       <div class="card">
-        <div class="card-header"><h3>需要立即處理</h3><span class="text-faint text-sm">逾期／高風險／待驗收，依急迫程度排序</span></div>
-        <div id="urgent-list"></div>
+        <div class="card-header"><h2>所有待關注工單</h2><span class="text-faint text-sm">逾期／高風險／待驗收／退回，依急迫程度排序</span></div>
+        <div id="attention-table"></div>
         <div class="urgent-mobile-more"><a class="btn btn-secondary btn-block" href="workorders.html">查看全部工單</a></div>
       </div>
     </main>
@@ -83,9 +79,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260809a"></script>
-<script src="js/data.js?v=20260809a"></script>
-<script src="js/shell.js?v=20260809a"></script>
+<script src="js/main.js?v=20260809c"></script>
+<script src="js/data.js?v=20260809c"></script>
+<script src="js/shell.js?v=20260809c"></script>
 <script>
 (function () {
   "use strict";
@@ -94,6 +90,8 @@
   var CO = window.CO, D = window.CO_DATA, ico = CO.icon;
   var main = document.getElementById("page-main");
   var forcedState = CO.demoStateParam();
+
+  document.querySelector('.page-actions-menu [data-menu-toggle]').innerHTML = ico("moreVertical");
 
   if (forcedState === "loading") {
     main.innerHTML = CO.stateBlockHtml("loading");
@@ -107,6 +105,10 @@
     });
     return;
   }
+
+  // ---------- dynamic date subtitle (never hardcoded) ----------
+  var today = new Date();
+  document.getElementById("dash-subtitle").textContent = (today.getMonth() + 1) + " 月 " + today.getDate() + " 日・全校設施與工單處理狀況";
 
   var workOrders = forcedState === "empty" ? [] : D.load("workOrders");
   var isOpen = function (w) { return w.status !== "done" && w.status !== "rejected"; };
@@ -123,7 +125,7 @@
   var avgHours = doneDurations.length ? (doneDurations.reduce(function (a, b) { return a + b; }, 0) / doneDurations.length) : 0;
   var avgHandling = avgHours >= 24 ? (avgHours / 24).toFixed(1) + " 天" : Math.round(avgHours) + " 小時";
 
-  // ---------- stat cards ----------
+  // ---------- KPI cards (tone color lives on the icon only, never the whole card) ----------
   document.getElementById("stats-grid").innerHTML = [
     { tone: "neutral", icon: "workorder", label: "待處理工單", value: openCount, foot: "尚未結案（含待分派／處理中／待驗收）" },
     { tone: "danger", icon: "alertOctagon", label: "逾期工單", value: overdueCount, foot: "已超過 SLA 期限，需優先處理" },
@@ -138,11 +140,24 @@
       "</div>"
     );
   }).join("");
+  // KPI cards are deliberately plain (non-interactive): workorders.html has
+  // no URL-driven pre-filter to link into yet, and a fake click target would
+  // be worse than none — see the room-planning notes for this round.
 
-  document.getElementById("sla-rate-value").textContent = workOrders.length ? slaRate + "%" : "—";
-  document.getElementById("avg-handling-value").textContent = doneDurations.length ? avgHandling : "—";
+  // ---------- 營運效能：SLA 進度條 + 簡易統計列 ----------
+  var effMount = document.getElementById("dash-efficiency");
+  var slaDisplay = workOrders.length ? slaRate : 0;
+  effMount.innerHTML =
+    '<div class="dash-efficiency-block">' +
+      '<div class="stat-label">SLA 達成率</div>' +
+      '<div class="dash-efficiency-value" style="font-size:24px;margin-top:4px;">' + (workOrders.length ? slaRate + "%" : "—") + '</div>' +
+      '<div class="progress-bar" role="progressbar" aria-label="SLA 達成率" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + slaDisplay + '"><div class="progress-bar-fill" style="width:' + slaDisplay + '%;"></div></div>' +
+    "</div>" +
+    '<div class="dash-efficiency-simple-row"><span class="stat-label">平均處理時間</span><span class="dash-efficiency-value">' + (doneDurations.length ? avgHandling : "—") + "</span></div>" +
+    '<div class="dash-efficiency-simple-row"><span class="stat-label">校園建築</span><span class="dash-efficiency-value">' + D.BUILDINGS.length + " 棟</span></div>" +
+    '<div class="dash-efficiency-simple-row"><span class="stat-label">完成工單</span><span class="dash-efficiency-value">' + doneCount + " 件</span></div>";
 
-  // ---------- building ranking ----------
+  // ---------- 建築排名 ----------
   var byBuilding = {};
   D.BUILDINGS.forEach(function (b) { byBuilding[b.id] = 0; });
   workOrders.filter(isOpen).forEach(function (w) { byBuilding[w.buildingId] = (byBuilding[w.buildingId] || 0) + 1; });
@@ -158,13 +173,13 @@
       return (
         '<div style="margin-bottom:12px;">' +
         '<div class="flex justify-between text-sm" style="margin-bottom:5px;"><span style="font-weight:600;">' + (i + 1) + ". " + r.name + '</span><span class="text-muted">' + r.count + ' 件</span></div>' +
-        '<div style="height:8px;border-radius:5px;background:var(--color-surface-sunken);overflow:hidden;"><div style="height:100%;width:' + pct + '%;border-radius:5px;background:#315e8a;"></div></div>' +
+        '<div style="height:8px;border-radius:5px;background:var(--color-surface-sunken);overflow:hidden;"><div style="height:100%;width:' + pct + '%;border-radius:5px;background:var(--color-info);"></div></div>' +
         "</div>"
       );
     }).join("");
   }
 
-  // ---------- facility type distribution (categorical, fixed order) ----------
+  // ---------- 設施類型分布 (categorical, fixed order) ----------
   var facCounts = D.FACILITY_TYPES.map(function (f) {
     return { id: f.id, name: f.name, swatch: f.swatch, count: workOrders.filter(function (w) { return w.facilityType === f.id; }).length };
   });
@@ -185,7 +200,32 @@
       '<div class="chart-legend">' + legendItems + "</div>";
   }
 
-  // ---------- 7-day trend (SVG line chart: created vs completed) ----------
+  // ---------- 次要分析 tabs：建築排名 / 設施類型 (always on, both viewports) ----------
+  (function initAnalysisTabs() {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.dash-analysis-tabs [role="tab"]'));
+    function selectTab(key, moveFocus) {
+      tabs.forEach(function (t) {
+        var isSelected = t.getAttribute("data-tab") === key;
+        t.setAttribute("aria-selected", String(isSelected));
+        t.tabIndex = isSelected ? 0 : -1;
+        var panel = document.getElementById(t.getAttribute("aria-controls"));
+        if (panel) panel.hidden = !isSelected;
+        if (isSelected && moveFocus) t.focus();
+      });
+    }
+    tabs.forEach(function (tab, idx) {
+      tab.addEventListener("click", function () { selectTab(tab.getAttribute("data-tab"), false); });
+      tab.addEventListener("keydown", function (e) {
+        var dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? "home" : e.key === "End" ? "end" : 0;
+        if (!dir) return;
+        e.preventDefault();
+        var nextIdx = dir === "home" ? 0 : dir === "end" ? tabs.length - 1 : (idx + dir + tabs.length) % tabs.length;
+        selectTab(tabs[nextIdx].getAttribute("data-tab"), true);
+      });
+    });
+  })();
+
+  // ---------- 近 7 日工單趨勢 (SVG line chart: created vs completed) ----------
   var days = [];
   for (var i = 6; i >= 0; i--) {
     var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - i);
@@ -264,22 +304,174 @@
     });
   }
 
-  // ---------- immediate action list ----------
-  var urgent = workOrders.filter(function (w) { return w.riskLevel === "overdue" || (w.riskLevel === "high" && w.status !== "done") || w.status === "review" || w.status === "rejected"; })
-    .sort(function (a, b) {
-      var rank = { overdue: 0, high: 1, caution: 2, normal: 3 };
-      return rank[a.riskLevel] - rank[b.riskLevel];
-    }).slice(0, 8);
+  // ---------- 校園異常熱點圖 (7 欄) ----------
+  // Reuses D.BUILDINGS / D.RISK_ORDER / CO.workOrderPopoverHtml — the exact
+  // same data and popover markup as map.html — instead of a second hardcoded
+  // dataset. No pan/zoom chrome (fixed 100% scale); a building with >1 open
+  // issue collapses into a cluster that lists its work orders directly,
+  // since there's no zoom control here to "expand into" like map.html has.
+  function renderHotspot(mount, allWorkOrders) {
+    var open = allWorkOrders.filter(isOpen);
+    if (!open.length) {
+      mount.innerHTML = CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有待處理的異常", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有校園設施狀況正常。" });
+      return;
+    }
 
-  var urgentMount = document.getElementById("urgent-list");
-  if (!urgent.length) {
-    urgentMount.innerHTML = '<div class="card-body">' + CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有需要立即處理的事項", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有逾期與高風險工單皆已妥善處理。" }) + "</div>";
+    var wrap = document.createElement("div");
+    wrap.className = "dash-hotspot-wrap";
+    var canvas = document.createElement("div");
+    canvas.className = "map-canvas";
+    D.BUILDINGS.forEach(function (b) {
+      var el = document.createElement("div");
+      el.className = "map-building";
+      el.style.left = b.x + "%"; el.style.top = b.y + "%"; el.style.width = b.w + "%"; el.style.height = b.h + "%";
+      el.innerHTML = b.name + '<span class="b-code">' + b.floors + " 層樓 · " + b.id + " 棟</span>";
+      canvas.appendChild(el);
+    });
+
+    var popover = document.createElement("div");
+    popover.className = "map-popover";
+
+    function closePopover() { popover.classList.remove("open"); }
+    function positionPopover(markerEl) {
+      var markerRect = markerEl.getBoundingClientRect();
+      var wrapRect = wrap.getBoundingClientRect();
+      var px = markerRect.left + markerRect.width / 2 - wrapRect.left;
+      var py = markerRect.top + markerRect.height / 2 - wrapRect.top;
+      var popW = 268;
+      var maxLeft = wrapRect.width - popW - 10;
+      popover.style.left = Math.max(6, Math.min(px + 16, maxLeft)) + "px";
+      popover.style.top = Math.max(6, Math.min(py - 20, wrapRect.height - 220)) + "px";
+    }
+    function openSingle(w, markerEl) {
+      var built = CO.workOrderPopoverHtml(w, D);
+      popover.innerHTML = built.html;
+      CO.mountPopoverPhoto(popover, built.firstPhoto);
+      positionPopover(markerEl);
+      popover.classList.add("open");
+    }
+    function openCluster(group, bld, markerEl) {
+      var sorted = group.slice().sort(function (a, b) { return D.RISK_ORDER[a.riskLevel] - D.RISK_ORDER[b.riskLevel]; });
+      popover.innerHTML =
+        '<button type="button" class="mp-close" data-mp-close aria-label="關閉">' + ico("x") + "</button>" +
+        "<h4>" + bld.name + "（" + group.length + " 筆異常）</h4>" +
+        '<div class="dash-cluster-list">' +
+        sorted.map(function (w) {
+          var risk = D.RISK_LEVELS[w.riskLevel];
+          return '<button type="button" class="dash-cluster-item" data-goto="workorder-detail.html?id=' + w.id + '"><span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + '</span><span class="dash-cluster-item-title">' + w.title + "</span></button>";
+        }).join("") +
+        "</div>";
+      positionPopover(markerEl);
+      popover.classList.add("open");
+      popover.querySelectorAll("[data-goto]").forEach(function (btn) {
+        btn.addEventListener("click", function () { window.location.href = btn.getAttribute("data-goto"); });
+      });
+    }
+
+    var byBuilding = {};
+    open.forEach(function (w) { (byBuilding[w.buildingId] = byBuilding[w.buildingId] || []).push(w); });
+
+    Object.keys(byBuilding).forEach(function (bId) {
+      var group = byBuilding[bId];
+      var bld = D.building(bId);
+      var x = bld.x + bld.w * 0.5, y = bld.y + bld.h * 0.68;
+      if (group.length > 1) {
+        var worst = group.slice().sort(function (a, b) { return D.RISK_ORDER[a.riskLevel] - D.RISK_ORDER[b.riskLevel]; })[0];
+        var cluster = document.createElement("button");
+        cluster.type = "button";
+        cluster.className = "map-cluster " + D.RISK_LEVELS[worst.riskLevel].markerClass;
+        cluster.style.left = x + "%"; cluster.style.top = y + "%";
+        cluster.setAttribute("aria-label", bld.name + "，共 " + group.length + " 筆異常，點擊查看清單");
+        cluster.textContent = group.length;
+        cluster.addEventListener("click", function (e) { e.stopPropagation(); openCluster(group, bld, cluster); });
+        canvas.appendChild(cluster);
+      } else {
+        var w = group[0];
+        var risk = D.RISK_LEVELS[w.riskLevel];
+        var fac = D.facility(w.facilityType);
+        var marker = document.createElement("button");
+        marker.type = "button";
+        marker.className = "map-marker " + risk.markerClass;
+        marker.style.left = x + "%"; marker.style.top = y + "%";
+        marker.setAttribute("aria-label", w.title + "，" + bld.name + "，" + risk.label);
+        marker.innerHTML = ico(fac.icon);
+        marker.addEventListener("click", function (e) { e.stopPropagation(); openSingle(w, marker); });
+        canvas.appendChild(marker);
+      }
+    });
+
+    popover.addEventListener("click", function (e) { if (e.target.closest("[data-mp-close]")) closePopover(); });
+    wrap.addEventListener("click", function (e) { if (!e.target.closest(".map-marker") && !e.target.closest(".map-cluster") && !e.target.closest(".map-popover")) closePopover(); });
+
+    wrap.appendChild(canvas);
+    wrap.appendChild(popover);
+    mount.innerHTML = "";
+    mount.appendChild(wrap);
+  }
+  renderHotspot(document.getElementById("dash-hotspot-root"), workOrders);
+
+  // ---------- 需要立即處理 (top 4 summary) + 所有待關注工單 (full table) ----------
+  // Both read from the exact same sorted/filtered list — the summary is
+  // just its first 4 rows — so the two views can never disagree.
+  function attentionRank(w) {
+    if (w.riskLevel === "overdue") return 0;
+    if (w.riskLevel === "high" && w.status !== "done") return 1;
+    if (w.status === "review") return 2;
+    if (w.status === "rejected") return 3;
+    return 4;
+  }
+  var attention = workOrders.filter(function (w) { return attentionRank(w) < 4; }).sort(function (a, b) { return attentionRank(a) - attentionRank(b); });
+  var urgentTop = attention.slice(0, 4);
+
+  var summaryMount = document.getElementById("dash-urgent-summary");
+  if (!urgentTop.length) {
+    summaryMount.innerHTML = CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有需要立即處理的事項", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有逾期與高風險工單皆已妥善處理。" });
   } else {
-    var rowsHtml = urgent.map(function (w) {
+    summaryMount.innerHTML = urgentTop.map(function (w) {
+      var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
+      return (
+        '<div class="dash-urgent-item" tabindex="0" role="link" data-goto="workorder-detail.html?id=' + w.id + '" data-wo-id="' + w.id + '" aria-label="' + w.title + '，' + w.buildingName + w.floor + '，' + risk.label + '，' + status.label + '">' +
+        '<span class="dash-urgent-photo" data-photo-mount></span>' +
+        '<span class="dash-urgent-body">' +
+        '<span class="dash-urgent-title">' + w.title + "</span>" +
+        '<span class="dash-urgent-meta">' + w.buildingName + " " + w.floor + " " + w.location + "</span>" +
+        '<span class="dash-urgent-badges"><span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + '</span><span class="badge ' + status.badge + '">' + status.label + "</span></span>" +
+        '<span class="dash-urgent-sla">SLA 期限：' + D.fmtDate(w.slaDueAt) + "</span>" +
+        "</span>" +
+        "</div>"
+      );
+    }).join("");
+
+    urgentTop.forEach(function (w) {
+      var item = summaryMount.querySelector('.dash-urgent-item[data-wo-id="' + w.id + '"]');
+      var photoMount = item.querySelector("[data-photo-mount]");
+      var firstPhoto = w.photos && w.photos.issue && w.photos.issue[0];
+      if (firstPhoto) {
+        photoMount.appendChild(CO.renderPhotoThumbnail(firstPhoto, { extraClass: "dash-urgent-thumb" }));
+      } else {
+        photoMount.innerHTML = '<div class="photo-empty-state dash-urgent-thumb" style="padding:0;" title="尚無現場照片">' + ico("image") + "</div>";
+      }
+    });
+
+    summaryMount.querySelectorAll(".dash-urgent-item").forEach(function (item) {
+      function go() { window.location.href = item.getAttribute("data-goto"); }
+      item.addEventListener("click", function (e) { if (e.target.closest(".photo-thumbnail-button")) return; go(); });
+      item.addEventListener("keydown", function (e) {
+        if (e.target !== item) return;
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
+      });
+    });
+  }
+
+  var attentionMount = document.getElementById("attention-table");
+  if (!attention.length) {
+    attentionMount.innerHTML = '<div class="card-body">' + CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有需要關注的工單", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有逾期、高風險、待驗收與退回工單皆已妥善處理。" }) + "</div>";
+  } else {
+    var rowsHtml = attention.map(function (w) {
       var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
       return (
         '<tr class="row-link" data-row-id="' + w.id + '">' +
-        '<td data-label="現場" class="urgent-photo-cell" data-wo-id="' + w.id + '"></td>' +
+        '<td data-label="現場" class="attention-photo-cell" data-wo-id="' + w.id + '"></td>' +
         '<td data-label="工單編號"><span class="cell-mono">' + w.id + "</span></td>" +
         '<td data-label="標題 / 位置"><span class="cell-primary">' + w.title + '</span><div class="cell-muted">' + w.buildingName + " " + w.floor + " " + w.location + "</div></td>" +
         '<td data-label="類型">' + w.facilityLabel + "</td>" +
@@ -289,61 +481,30 @@
         "</tr>"
       );
     }).join("");
-    urgentMount.innerHTML =
+    attentionMount.innerHTML =
       '<div class="table-scroll"><table class="data-table table-responsive-stack">' +
       "<thead><tr><th>現場</th><th>工單編號</th><th>標題 / 位置</th><th>類型</th><th>風險</th><th>狀態</th><th>SLA 期限</th></tr></thead>" +
       "<tbody>" + rowsHtml + "</tbody>" +
       "</table></div>";
 
-    // Only the first problem photo, only for the (already-limited) rows shown
-    // here — never every work order's whole photo set on page load.
-    urgent.forEach(function (w) {
-      var cell = urgentMount.querySelector('.urgent-photo-cell[data-wo-id="' + w.id + '"]');
+    attention.forEach(function (w) {
+      var cell = attentionMount.querySelector('.attention-photo-cell[data-wo-id="' + w.id + '"]');
       if (!cell) return;
       var firstPhoto = w.photos && w.photos.issue && w.photos.issue[0];
       if (firstPhoto) {
-        var btn = CO.renderPhotoThumbnail(firstPhoto, { extraClass: "workorder-thumbnail" });
-        cell.appendChild(btn);
+        cell.appendChild(CO.renderPhotoThumbnail(firstPhoto, { extraClass: "workorder-thumbnail" }));
       } else {
         cell.innerHTML = '<div class="photo-empty-state workorder-thumbnail" style="padding:0;" title="尚無現場照片">' + ico("image") + "</div>";
       }
     });
 
-    urgentMount.querySelectorAll("tr.row-link").forEach(function (tr) {
+    attentionMount.querySelectorAll("tr.row-link").forEach(function (tr) {
       tr.addEventListener("click", function (e) {
         if (e.target.closest(".photo-thumbnail-button")) return;
         window.location.href = "workorder-detail.html?id=" + tr.getAttribute("data-row-id");
       });
     });
   }
-
-  // ---------- mobile analysis tabs (role="tablist"/"tabpanel") ----------
-  // Only visible under the 640px breakpoint (see style.css); harmless no-op
-  // chrome on desktop since .dashboard-tabs stays display:none there.
-  (function initDashboardTabs() {
-    var tabs = Array.prototype.slice.call(document.querySelectorAll('.dashboard-tabs [role="tab"]'));
-    if (!tabs.length) return;
-    function selectTab(key, moveFocus) {
-      tabs.forEach(function (t) {
-        var isSelected = t.getAttribute("data-tab") === key;
-        t.setAttribute("aria-selected", String(isSelected));
-        t.tabIndex = isSelected ? 0 : -1;
-        var panel = document.getElementById(t.getAttribute("aria-controls"));
-        if (panel) panel.classList.toggle("tab-active", isSelected);
-        if (isSelected && moveFocus) t.focus();
-      });
-    }
-    tabs.forEach(function (tab, idx) {
-      tab.addEventListener("click", function () { selectTab(tab.getAttribute("data-tab"), false); });
-      tab.addEventListener("keydown", function (e) {
-        var dir = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : e.key === "Home" ? "home" : e.key === "End" ? "end" : 0;
-        if (!dir) return;
-        e.preventDefault();
-        var nextIdx = dir === "home" ? 0 : dir === "end" ? tabs.length - 1 : (idx + dir + tabs.length) % tabs.length;
-        selectTab(tabs[nextIdx].getAttribute("data-tab"), true);
-      });
-    });
-  })();
 })();
 </script>
 </body>

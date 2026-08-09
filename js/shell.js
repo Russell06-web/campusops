@@ -36,6 +36,32 @@
   function roleDef(id) { return ROLE_DEFS.filter(function (r) { return r.id === id; })[0] || ROLE_DEFS[0]; }
   function initials(name) { return name.slice(-2); }
 
+  var DEMO_MODES = [
+    { state: null, label: "正常畫面", icon: "checkCircle" },
+    { state: "loading", label: "載入中", icon: "clock" },
+    { state: "error", label: "錯誤", icon: "alertOctagon" },
+    { state: "empty", label: "空狀態", icon: "inbox" }
+  ];
+  function demoModeHrefFor(state) {
+    var u = new URL(window.location.href);
+    if (state) u.searchParams.set("demo", state); else u.searchParams.delete("demo");
+    return u.pathname + u.search;
+  }
+  function activeDemoMode() {
+    var current = new URL(window.location.href).searchParams.get("demo");
+    return DEMO_MODES.filter(function (m) { return m.state === current; })[0] || DEMO_MODES[0];
+  }
+  function demoModeItemsHtml(activeMode) {
+    return DEMO_MODES.map(function (m) {
+      var isActive = m === activeMode;
+      return (
+        '<a class="role-menu-item' + (isActive ? " active" : "") + '" href="' + demoModeHrefFor(m.state) + '">' +
+        ico(m.icon) + '<span><span class="r-name">' + m.label + "</span></span>" +
+        "</a>"
+      );
+    }).join("");
+  }
+
   function renderSidebar(activeKey, role) {
     var linksHtml = NAV_ITEMS.map(function (item) {
       var isActive = item.key === activeKey;
@@ -68,7 +94,27 @@
     );
   }
 
-  function renderTopbar(title, breadcrumb) {
+  // Small "Demo" pill for the Dashboard's slim topbar — replaces the
+  // full-width banner there only. Opens a popover carrying the exact same
+  // disclaimer text plus the demo-state switcher (loading/error/empty),
+  // so nothing from the original banner is lost, just relocated.
+  function renderDemoTag() {
+    var activeMode = activeDemoMode();
+    return (
+      '<div class="role-switcher demo-tag-switcher">' +
+        '<button type="button" class="demo-tag" data-menu-toggle aria-controls="demo-tag-menu" aria-haspopup="true" aria-expanded="false" aria-label="Demo 展示環境說明' + (activeMode.state ? "，目前畫面狀態：" + activeMode.label : "") + '">' +
+          ico("alertTriangle") + "<span>Demo</span>" +
+        "</button>" +
+        '<div class="role-menu demo-tag-menu" id="demo-tag-menu">' +
+          '<div class="demo-tag-declaration">' + ico("alertTriangle") + '<span>Demo 展示環境 — 所有校園、人員與工單資料皆為虛構情境，不代表任何真實學校或機構。</span></div>' +
+          '<div class="role-menu-label">切換畫面狀態（僅影響檢視，不影響資料）</div>' + demoModeItemsHtml(activeMode) +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function renderTopbar(title, breadcrumb, opts) {
+    opts = opts || {};
     var role = roleDef(currentRole());
     var roleItemsHtml = ROLE_DEFS.map(function (r) {
       var active = r.id === role.id;
@@ -80,16 +126,25 @@
       );
     }).join("");
 
+    // Dashboard passes no title/breadcrumb (see dashboard.html's topbar-mount)
+    // so the page-heading (and its H1) simply doesn't render there — the
+    // page's own <h1 class="page-title"> in the main content is the only H1.
+    // Every other page still gets its title here exactly as before.
+    var headingHtml = title
+      ? '<div class="page-heading"><h1>' + title + "</h1>" + (breadcrumb ? '<span class="breadcrumb">' + breadcrumb + "</span>" : "") + "</div>"
+      : "";
+
     return (
       '<div class="topbar-inner">' +
         '<div class="topbar-left">' +
           '<button type="button" class="sidebar-toggle" data-sidebar-toggle aria-label="收合/展開選單">' + ico("menu") + "</button>" +
-          '<div class="page-heading"><h1>' + (title || "") + "</h1>" + (breadcrumb ? '<span class="breadcrumb">' + breadcrumb + "</span>" : "") + "</div>" +
+          headingHtml +
         "</div>" +
         '<div class="topbar-right">' +
-          '<button type="button" class="icon-btn" aria-label="通知" data-notification-trigger aria-haspopup="true" aria-expanded="false">' + ico("bell") + '<span class="badge-dot"></span></button>' +
+          '<button type="button" class="icon-btn" aria-label="通知" data-menu-toggle aria-controls="notif-menu" aria-haspopup="true" aria-expanded="false">' + ico("bell") + '<span class="badge-dot"></span></button>' +
+          (opts.compactDemo ? renderDemoTag() : "") +
           '<div class="role-switcher">' +
-            '<button type="button" class="role-chip" data-role-toggle aria-haspopup="true" aria-expanded="false">' +
+            '<button type="button" class="role-chip" data-menu-toggle aria-controls="role-menu" aria-haspopup="true" aria-expanded="false">' +
               '<span class="avatar">' + initials(role.name) + "</span>" +
               '<span><span class="role-name">' + role.name + '</span><br><span class="role-title">' + role.title + "</span></span>" +
               ico("chevronDown") +
@@ -109,42 +164,19 @@
     );
   }
 
-  var DEMO_MODES = [
-    { state: null, label: "正常畫面", icon: "checkCircle" },
-    { state: "loading", label: "載入中", icon: "clock" },
-    { state: "error", label: "錯誤", icon: "alertOctagon" },
-    { state: "empty", label: "空狀態", icon: "inbox" }
-  ];
-
   function renderDemoBanner() {
-    var url = new URL(window.location.href);
-    var current = url.searchParams.get("demo");
-    function hrefFor(state) {
-      var u = new URL(url.href);
-      if (state) u.searchParams.set("demo", state); else u.searchParams.delete("demo");
-      return u.pathname + u.search;
-    }
-    var activeMode = DEMO_MODES.filter(function (m) { return m.state === current; })[0] || DEMO_MODES[0];
-    var itemsHtml = DEMO_MODES.map(function (m) {
-      var isActive = m === activeMode;
-      return (
-        '<a class="role-menu-item' + (isActive ? " active" : "") + '" href="' + hrefFor(m.state) + '">' +
-        ico(m.icon) + '<span><span class="r-name">' + m.label + "</span></span>" +
-        "</a>"
-      );
-    }).join("");
-
+    var activeMode = activeDemoMode();
     return (
       ico("alertTriangle") +
       '<span class="db-text">Demo 展示環境 — 所有校園、人員與工單資料皆為虛構情境，不代表任何真實學校或機構。</span>' +
       '<div class="role-switcher demo-mode-switcher">' +
-        '<button type="button" class="role-chip" data-demo-mode-toggle aria-haspopup="true" aria-expanded="false">' +
+        '<button type="button" class="role-chip" data-menu-toggle aria-controls="demo-mode-menu" aria-haspopup="true" aria-expanded="false">' +
           ico("layers") +
           '<span class="role-name">展示模式' + (activeMode.state ? "：" + activeMode.label : "") + "</span>" +
           ico("chevronDown") +
         "</button>" +
         '<div class="role-menu" id="demo-mode-menu">' +
-          '<div class="role-menu-label">切換畫面狀態（僅影響檢視，不影響資料）</div>' + itemsHtml +
+          '<div class="role-menu-label">切換畫面狀態（僅影響檢視，不影響資料）</div>' + demoModeItemsHtml(activeMode) +
         "</div>" +
       "</div>"
     );
@@ -190,9 +222,12 @@
     var sidebarMount = document.getElementById("sidebar-mount");
     var topbarMount = document.getElementById("topbar-mount");
     var bannerMount = document.getElementById("demo-banner-mount");
+    // Dashboard trades the full-width Demo banner for a compact topbar tag
+    // (see renderDemoTag) — every other page keeps the banner exactly as before.
+    var compactDemo = page === "dashboard";
     if (sidebarMount) sidebarMount.outerHTML = renderSidebar(page, role);
-    if (topbarMount) topbarMount.innerHTML = renderTopbar(topbarMount.getAttribute("data-title"), topbarMount.getAttribute("data-breadcrumb"));
-    if (bannerMount) bannerMount.innerHTML = renderDemoBanner();
+    if (topbarMount) topbarMount.innerHTML = renderTopbar(topbarMount.getAttribute("data-title"), topbarMount.getAttribute("data-breadcrumb"), { compactDemo: compactDemo });
+    if (bannerMount) { if (compactDemo) bannerMount.remove(); else bannerMount.innerHTML = renderDemoBanner(); }
     if (!document.getElementById("reset-demo-modal")) document.body.insertAdjacentHTML("beforeend", renderResetModal());
 
     applyRoleGate(page);
@@ -204,31 +239,31 @@
       }
       if (e.target.closest("[data-reset-demo]")) window.CO.openModal("reset-demo-modal");
       if (e.target.closest("[data-open-role-switcher]")) {
-        var chip = document.querySelector("[data-role-toggle]");
+        var chip = document.querySelector('[data-menu-toggle][aria-controls="role-menu"]');
         if (chip) chip.click();
       }
 
-      var roleToggle = e.target.closest("[data-role-toggle]");
-      var notifToggle = e.target.closest("[data-notification-trigger]");
-      var demoModeToggle = e.target.closest("[data-demo-mode-toggle]");
-      var menuPairs = [
-        { menu: document.getElementById("role-menu"), toggle: document.querySelector("[data-role-toggle]") },
-        { menu: document.getElementById("notif-menu"), toggle: document.querySelector("[data-notification-trigger]") },
-        { menu: document.getElementById("demo-mode-menu"), toggle: document.querySelector("[data-demo-mode-toggle]") }
-      ];
+      // Generic popover system: any [data-menu-toggle aria-controls="id"]
+      // opens/closes the .role-menu with that id, closing every other open
+      // one. Covers the role switcher, notifications, the demo-mode switcher
+      // (full banner) and the Dashboard's compact Demo tag alike — one
+      // mechanism instead of a hardcoded pair per menu.
+      var toggle = e.target.closest("[data-menu-toggle]");
+      var openMenus = Array.prototype.slice.call(document.querySelectorAll(".role-menu[id]"));
       function closeAllExcept(keepMenu) {
-        menuPairs.forEach(function (p) {
-          if (!p.menu) return;
-          var isOpen = p.menu === keepMenu;
-          p.menu.classList.toggle("open", isOpen);
-          if (p.toggle) p.toggle.setAttribute("aria-expanded", String(isOpen));
+        openMenus.forEach(function (m) {
+          var isOpen = m === keepMenu;
+          m.classList.toggle("open", isOpen);
+          var t = document.querySelector('[data-menu-toggle][aria-controls="' + m.id + '"]');
+          if (t) t.setAttribute("aria-expanded", String(isOpen));
         });
       }
-      var roleMenu = menuPairs[0].menu, notifMenu = menuPairs[1].menu, demoModeMenu = menuPairs[2].menu;
-      if (roleToggle) { closeAllExcept(roleMenu.classList.contains("open") ? null : roleMenu); }
-      else if (notifToggle) { closeAllExcept(notifMenu.classList.contains("open") ? null : notifMenu); }
-      else if (demoModeToggle) { closeAllExcept(demoModeMenu.classList.contains("open") ? null : demoModeMenu); }
-      else if (!e.target.closest(".role-menu")) { closeAllExcept(null); }
+      if (toggle) {
+        var targetMenu = document.getElementById(toggle.getAttribute("aria-controls"));
+        closeAllExcept(targetMenu && targetMenu.classList.contains("open") ? null : targetMenu);
+      } else if (!e.target.closest(".role-menu")) {
+        closeAllExcept(null);
+      }
 
       var pick = e.target.closest("[data-role-pick]");
       if (pick) {
@@ -241,6 +276,17 @@
         try { localStorage.removeItem("co_session_v1"); } catch (err) { /* ignore */ }
         window.location.href = "index.html";
       }
+    });
+
+    // Escape closes whichever popover (role/notification/demo-mode/demo-tag)
+    // is currently open and returns focus to its trigger button.
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      var openMenu = document.querySelector(".role-menu.open");
+      if (!openMenu) return;
+      var toggle = document.querySelector('[data-menu-toggle][aria-controls="' + openMenu.id + '"]');
+      openMenu.classList.remove("open");
+      if (toggle) { toggle.setAttribute("aria-expanded", "false"); toggle.focus(); }
     });
 
     var resetConfirm = document.getElementById("reset-demo-confirm");

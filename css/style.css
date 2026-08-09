@@ -677,14 +677,118 @@ body.modal-open { overflow: hidden; }
   .page-header { flex-direction: column; align-items: stretch; }
 }
 
-/* ---------- Mobile Dashboard: denser KPIs + tabbed analysis row ---------- */
+/* ==========================================================================
+   Dashboard — campus operations command center
+   ========================================================================== */
 
-/* Base (desktop/tablet) state — declared BEFORE the media query below so the
-   640px override actually wins there; two equal-specificity rules resolve
-   by source order, and a later plain rule would otherwise beat an earlier
-   media-query rule regardless of viewport. */
-.dashboard-tabs { display: none; }
+/* ---------- Topbar: slim demo tag + mobile page-actions menu ---------- */
+
+.demo-tag {
+  display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px;
+  border: 1px solid var(--color-info-border); border-radius: var(--radius-lg);
+  background: var(--color-info-bg); color: var(--color-info-ink); font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.demo-tag:hover { background: var(--color-info-border); }
+.demo-tag svg { width: 15px; height: 15px; }
+.demo-tag:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
+.demo-tag-menu { width: 300px; }
+.demo-tag-declaration {
+  display: flex; gap: 8px; font-size: 12px; color: var(--color-info-ink); background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border); border-radius: var(--radius-md); padding: 8px 10px; margin: 4px 4px 8px;
+}
+.demo-tag-declaration svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; }
+
+.page-actions-menu { position: relative; display: none; }
+.page-actions-menu .icon-btn:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
+.page-actions-menu .role-menu { width: 240px; }
+
+/* ---------- 12-column row layout ---------- */
+
+.dash-row-12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.dash-col-7 { grid-column: span 7; }
+.dash-col-5 { grid-column: span 5; }
+.dash-col-8 { grid-column: span 8; }
+.dash-col-4 { grid-column: span 4; }
+.dash-hotspot-panel { order: 1; display: flex; flex-direction: column; }
+.dash-urgent-panel { order: 2; display: flex; flex-direction: column; }
+.dash-panel-link { font-size: 12.5px; font-weight: 600; color: var(--color-info); white-space: nowrap; }
+.dash-panel-link:hover { text-decoration: underline; }
+
+/* ---------- Hotspot map — reuses .map-canvas/.map-building/.map-marker/
+   .map-cluster/.map-popover from the full facility map (map.html) so both
+   surfaces render identically; only the wrapper differs (no pan/zoom chrome
+   here, fixed 100% scale). Scoped so it never touches map.html's own rules. */
+.dash-hotspot-wrap {
+  position: relative; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  overflow: hidden; min-height: 320px; flex: 1;
+}
+.dash-hotspot-wrap .map-canvas { position: absolute; inset: 0; }
+.dash-hotspot-wrap .map-building { cursor: default; }
+.dash-hotspot-wrap .map-building:hover { border-color: var(--color-border-strong); }
+@media (max-width: 560px) { .dash-hotspot-wrap { min-height: 280px; } }
+
+/* Cluster popover — the hotspot's simplified stand-in for map.html's
+   zoom-to-expand: no zoom control here, so a cluster instead lists its
+   work orders directly, worst-risk first. */
+.dash-cluster-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.dash-cluster-item {
+  display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font: inherit;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 6px 8px;
+  background: var(--color-surface); cursor: pointer;
+}
+.dash-cluster-item:hover { background: var(--color-surface-sunken); }
+.dash-cluster-item:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
+.dash-cluster-item-title { font-size: 12.5px; color: var(--color-text); }
+
+/* ---------- 立即處理 summary cards (top 4, 64×48 photo) ---------- */
+
+.dash-urgent-list { display: flex; flex-direction: column; }
+.dash-urgent-item {
+  display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px;
+  border-top: 1px solid var(--color-border); cursor: pointer;
+}
+.dash-urgent-item:first-child { border-top: none; }
+.dash-urgent-item:hover { background: var(--color-surface-sunken); }
+.dash-urgent-item:focus-visible { outline: 2px solid var(--color-info); outline-offset: -2px; background: var(--color-surface-sunken); }
+.dash-urgent-thumb { width: 64px; height: 48px; flex-shrink: 0; }
+.dash-urgent-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dash-urgent-title { font-size: 13px; font-weight: 700; color: var(--color-text); }
+.dash-urgent-meta { font-size: 12px; color: var(--color-text-faint); }
+.dash-urgent-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.dash-urgent-sla { font-size: 11.5px; color: var(--color-text-muted); }
 .urgent-mobile-more { display: none; }
+
+/* ---------- 營運效能: SLA progress bar + simple stat rows ---------- */
+
+.dash-efficiency-block + .dash-efficiency-block { margin-top: 18px; }
+.progress-bar { height: 10px; border-radius: 6px; background: var(--color-surface-sunken); overflow: hidden; margin-top: 8px; }
+.progress-bar-fill { height: 100%; border-radius: 6px; background: var(--color-primary); }
+.dash-efficiency-simple-row { display: flex; justify-content: space-between; align-items: baseline; padding: 10px 0; border-top: 1px solid var(--color-border); }
+.dash-efficiency-simple-row:first-child { border-top: none; padding-top: 0; }
+.dash-efficiency-simple-row .dash-efficiency-value { font-size: 16px; font-weight: 800; }
+
+/* ---------- 次要分析: always-on 建築排名／設施類型 tabs (both viewports) ---------- */
+
+.dash-analysis-tabs { display: flex; gap: 4px; padding: 10px 10px 0; border-bottom: 1px solid var(--color-border); }
+.dash-analysis-tabs [role="tab"] {
+  border: none; background: none; color: var(--color-text-muted); font-size: 13px; font-weight: 600;
+  padding: 10px 14px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.dash-analysis-tabs [role="tab"]:hover { color: var(--color-text); }
+.dash-analysis-tabs [role="tab"][aria-selected="true"] { color: var(--color-primary-hover); border-bottom-color: var(--color-primary); }
+.dash-analysis-tabs [role="tab"]:focus-visible { outline: 2px solid var(--color-info); outline-offset: -2px; border-radius: var(--radius-sm); }
+
+/* ---------- 所有待關注工單 (full table, bottom) ---------- */
+
+.workorder-thumbnail { width: 48px; height: 48px; }
+
+@media (max-width: 900px) {
+  /* 立即處理／校園異常熱點圖 collapse to a single column, urgent-list first. */
+  .dash-row-12 { grid-template-columns: 1fr; }
+  .dash-col-7, .dash-col-5, .dash-col-8, .dash-col-4 { grid-column: span 1; }
+  .dash-hotspot-panel { order: 2; }
+  .dash-urgent-panel { order: 1; }
+}
 
 @media (max-width: 640px) {
   /* KPI cards stay 2-up on the dashboard specifically (denser than the
@@ -694,45 +798,32 @@ body.modal-open { overflow: hidden; }
   body[data-page="dashboard"] .stat-card { min-height: 0; padding: 12px 14px; }
   body[data-page="dashboard"] .stat-card .stat-value { font-size: 22px; }
 
-  /* 近7日趨勢 / 建築排名 / 設施類型分布 collapse from 3 stacked cards into
-     one tabbed view — see .dashboard-tabs role="tablist" wiring in
-     dashboard.html. Desktop/tablet keep the plain 3-card grid untouched. */
-  .dashboard-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 12px; margin: -2px -2px 0; }
-  .dashboard-tabs [role="tab"] {
-    flex: 1 0 auto; white-space: nowrap; border: 1px solid var(--color-border-strong); background: var(--color-surface);
-    color: var(--color-text-muted); font-size: 12.5px; font-weight: 600; padding: 7px 12px; border-radius: 999px; cursor: pointer;
-  }
-  .dashboard-tabs [role="tab"][aria-selected="true"] { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
-  body[data-page="dashboard"] .analysis-row { display: block; margin-bottom: 0; }
-  body[data-page="dashboard"] .analysis-row > .card { display: none; margin-bottom: 16px; }
-  body[data-page="dashboard"] .analysis-row > .card.tab-active { display: block; }
+  /* 主要操作收進 More Menu，H1 旁只留一顆按鈕 */
+  .page-header.dash-header .page-actions { display: none; }
+  .page-actions-menu { display: block; }
 
-  /* 需要立即處理: only the top 3 rows on a phone, with an explicit way to
-     reach the rest instead of a long scroll. */
-  #urgent-list tbody tr:nth-child(n+4) { display: none; }
-  .urgent-mobile-more { display: block; padding: 12px 16px 16px; }
+  /* 需要立即處理摘要：只留前 3 筆，其餘透過「查看全部工單」到工單管理頁 */
+  .dash-urgent-item:nth-child(n+4) { display: none; }
+  .urgent-mobile-more { display: block; padding: 12px 18px 16px; }
 
-  /* 需要立即處理 gets a bespoke "photo left, text right" card instead of the
-     generic label:value stack every other responsive table uses — a grid
-     with the thumbnail spanning all rows in column 1 and 標題/位置/風險/狀態
-     stacked in column 2. 工單編號/類型/SLA are dropped on this card (still
-     visible on desktop and on the full 工單管理 list). */
+  /* 所有待關注工單（完整表格）: 同樣的 photo-left / text-right 卡片，只留前 3 筆 */
+  #attention-table tbody tr:nth-child(n+4) { display: none; }
   .workorder-thumbnail { width: 72px; height: 54px; }
-  #urgent-list table.data-table.table-responsive-stack { min-width: 0; }
-  #urgent-list tbody tr {
+  #attention-table table.data-table.table-responsive-stack { min-width: 0; }
+  #attention-table tbody tr {
     display: grid; grid-template-columns: 72px 1fr; column-gap: 12px; align-items: start;
     border: 1px solid var(--color-border); border-radius: var(--radius-lg); margin-bottom: 10px; padding: 10px;
   }
-  #urgent-list td[data-label="工單編號"],
-  #urgent-list td[data-label="類型"],
-  #urgent-list td[data-label="SLA 期限"] { display: none; }
-  #urgent-list td[data-label="現場"] { grid-column: 1; grid-row: 1 / -1; padding: 0; align-self: start; }
-  #urgent-list td[data-label="標題 / 位置"],
-  #urgent-list td[data-label="風險"],
-  #urgent-list td[data-label="狀態"] { grid-column: 2; display: block; padding: 3px 12px; text-align: left; }
-  #urgent-list td[data-label="標題 / 位置"]::before,
-  #urgent-list td[data-label="風險"]::before,
-  #urgent-list td[data-label="狀態"]::before { display: none; }
+  #attention-table td[data-label="工單編號"],
+  #attention-table td[data-label="類型"],
+  #attention-table td[data-label="SLA 期限"] { display: none; }
+  #attention-table td[data-label="現場"] { grid-column: 1; grid-row: 1 / -1; padding: 0; align-self: start; }
+  #attention-table td[data-label="標題 / 位置"],
+  #attention-table td[data-label="風險"],
+  #attention-table td[data-label="狀態"] { grid-column: 2; display: block; padding: 3px 12px; text-align: left; }
+  #attention-table td[data-label="標題 / 位置"]::before,
+  #attention-table td[data-label="風險"]::before,
+  #attention-table td[data-label="狀態"]::before { display: none; }
 }
 
 /* ---------- Mobile inspection form (390px design) ---------- */
