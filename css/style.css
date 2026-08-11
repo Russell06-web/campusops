@@ -704,7 +704,7 @@ body.modal-open { overflow: hidden; }
 
 /* ---------- 12-column row layout ---------- */
 
-.dash-row-12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+.dash-row-12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px; }
 .dash-col-7 { grid-column: span 7; }
 .dash-col-5 { grid-column: span 5; }
 .dash-col-8 { grid-column: span 8; }
@@ -713,19 +713,27 @@ body.modal-open { overflow: hidden; }
 .dash-urgent-panel { order: 2; display: flex; flex-direction: column; }
 .dash-panel-link { font-size: 12.5px; font-weight: 600; color: var(--color-info); white-space: nowrap; }
 .dash-panel-link:hover { text-decoration: underline; }
+.dash-panel-link:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; border-radius: 2px; }
+
+/* Denser KPI row + section rhythm for the Dashboard specifically (scoped by
+   body[data-page], same pattern the existing <=640px rule below already
+   uses) — other pages' .stats-grid/.stat-card are untouched. */
+body[data-page="dashboard"] .stats-grid { gap: 12px; margin-bottom: 16px; }
+body[data-page="dashboard"] .stat-card { padding: 14px 16px; min-height: 92px; }
 
 /* ---------- Hotspot map — reuses .map-canvas/.map-building/.map-marker/
    .map-cluster/.map-popover from the full facility map (map.html) so both
    surfaces render identically; only the wrapper differs (no pan/zoom chrome
-   here, fixed 100% scale). Scoped so it never touches map.html's own rules. */
+   here, fixed 100% scale). Scoped so it never touches map.html's own rules.
+   280px matches the mobile floor exactly, so one value now covers every
+   viewport instead of a separate <=560px override. */
 .dash-hotspot-wrap {
   position: relative; border: 1px solid var(--color-border); border-radius: var(--radius-lg);
-  overflow: hidden; min-height: 320px; flex: 1;
+  overflow: hidden; min-height: 280px; flex: 1;
 }
 .dash-hotspot-wrap .map-canvas { position: absolute; inset: 0; }
 .dash-hotspot-wrap .map-building { cursor: default; }
 .dash-hotspot-wrap .map-building:hover { border-color: var(--color-border-strong); }
-@media (max-width: 560px) { .dash-hotspot-wrap { min-height: 280px; } }
 
 /* Cluster popover — the hotspot's simplified stand-in for map.html's
    zoom-to-expand: no zoom control here, so a cluster instead lists its
@@ -740,23 +748,43 @@ body.modal-open { overflow: hidden; }
 .dash-cluster-item:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
 .dash-cluster-item-title { font-size: 12.5px; color: var(--color-text); }
 
-/* ---------- 立即處理 summary cards (top 4, 64×48 photo) ---------- */
+/* ---------- 立即處理 summary cards (top 3, 64×48 photo) ---------- */
+/* Two independent, non-nested controls per row: the photo <button> (opens
+   the Lightbox) and .dash-urgent-link (a real <a>, opens the work order) —
+   .dash-urgent-item itself is just a flex wrapper now, not an interactive
+   role="link" div, so there's no double interaction to guard against. */
 
 .dash-urgent-list { display: flex; flex-direction: column; }
 .dash-urgent-item {
-  display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px;
-  border-top: 1px solid var(--color-border); cursor: pointer;
+  display: flex; gap: 12px; align-items: flex-start; padding: 10px 16px;
+  border-top: 1px solid var(--color-border);
 }
 .dash-urgent-item:first-child { border-top: none; }
-.dash-urgent-item:hover { background: var(--color-surface-sunken); }
-.dash-urgent-item:focus-visible { outline: 2px solid var(--color-info); outline-offset: -2px; background: var(--color-surface-sunken); }
 .dash-urgent-thumb { width: 64px; height: 48px; flex-shrink: 0; }
-.dash-urgent-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dash-urgent-link {
+  flex: 1; min-width: 0; display: block; border-radius: var(--radius-sm);
+  margin: -4px -6px; padding: 4px 6px;
+}
+.dash-urgent-link:hover { background: var(--color-surface-sunken); }
+.dash-urgent-link:hover .dash-urgent-title { text-decoration: underline; }
+.dash-urgent-link:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; }
+.dash-urgent-body { display: flex; flex-direction: column; gap: 3px; }
 .dash-urgent-title { font-size: 13px; font-weight: 700; color: var(--color-text); }
 .dash-urgent-meta { font-size: 12px; color: var(--color-text-faint); }
 .dash-urgent-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 .dash-urgent-sla { font-size: 11.5px; color: var(--color-text-muted); }
-.urgent-mobile-more { display: none; }
+
+/* ---------- 所有待關注工單: title link + always-visible "查看全部工單" ---------- */
+
+.attention-row-link { display: inline-block; }
+.attention-row-link:hover { text-decoration: underline; }
+.attention-row-link:focus-visible { outline: 2px solid var(--color-info); outline-offset: 2px; border-radius: 2px; }
+
+.dash-view-all-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px 18px; border-top: 1px solid var(--color-border);
+}
+.dash-view-all-count { font-size: 12px; color: var(--color-text-faint); flex: 1; min-width: 160px; }
 
 /* ---------- 營運效能: SLA progress bar + simple stat rows ---------- */
 
@@ -802,11 +830,12 @@ body.modal-open { overflow: hidden; }
   .page-header.dash-header .page-actions { display: none; }
   .page-actions-menu { display: block; }
 
-  /* 需要立即處理摘要：只留前 3 筆，其餘透過「查看全部工單」到工單管理頁 */
-  .dash-urgent-item:nth-child(n+4) { display: none; }
-  .urgent-mobile-more { display: block; padding: 12px 18px 16px; }
+  /* 需要立即處理摘要已經只渲染 3 筆（見 dashboard.html），這裡不需要再用 CSS
+     隱藏第 4 筆；查看全部工單改放在 Card Header，任何尺寸都看得到。 */
 
-  /* 所有待關注工單（完整表格）: 同樣的 photo-left / text-right 卡片，只留前 3 筆 */
+  .dash-view-all-footer { padding: 12px 16px 16px; }
+
+  /* 所有待關注工單（完整表格，桌面最多 6 筆）: 同樣的 photo-left / text-right 卡片，手機只留前 3 筆 */
   #attention-table tbody tr:nth-child(n+4) { display: none; }
   .workorder-thumbnail { width: 72px; height: 54px; }
   #attention-table table.data-table.table-responsive-stack { min-width: 0; }

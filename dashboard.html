@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>營運總覽 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260809c">
+<link rel="stylesheet" href="css/style.css?v=20260811a">
 </head>
 <body data-page="dashboard" data-roles="manager">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -36,19 +36,18 @@
       <h2 class="visually-hidden">關鍵指標</h2>
       <div class="stats-grid" id="stats-grid"></div>
 
-      <div class="dash-row-12 mb-16">
+      <div class="dash-row-12 mb-12">
         <div class="card dash-col-7 dash-hotspot-panel">
           <div class="card-header"><h2>校園異常熱點圖</h2><a class="dash-panel-link" href="map.html">查看完整校園設施分布圖</a></div>
           <div class="card-body" id="dash-hotspot-root" style="display:flex;flex-direction:column;flex:1;"></div>
         </div>
         <div class="card dash-col-5 dash-urgent-panel">
-          <div class="card-header"><h2>需要立即處理</h2></div>
+          <div class="card-header"><h2>需要立即處理</h2><a class="dash-panel-link" href="workorders.html">查看全部工單</a></div>
           <div class="dash-urgent-list" id="dash-urgent-summary"></div>
-          <div class="urgent-mobile-more"><a class="btn btn-secondary btn-block" href="workorders.html">查看全部工單</a></div>
         </div>
       </div>
 
-      <div class="dash-row-12 mb-16">
+      <div class="dash-row-12 mb-12">
         <div class="card dash-col-8">
           <div class="card-header"><h2>近 7 日工單趨勢</h2></div>
           <div class="card-body" id="trend-chart"></div>
@@ -59,7 +58,7 @@
         </div>
       </div>
 
-      <div class="card mb-16">
+      <div class="card mb-12">
         <h2 class="visually-hidden">次要分析</h2>
         <div class="dash-analysis-tabs" role="tablist" aria-label="次要分析切換">
           <button type="button" role="tab" id="atab-rank" aria-controls="apanel-rank" aria-selected="true" tabindex="0" data-tab="rank">建築排名</button>
@@ -72,16 +71,19 @@
       <div class="card">
         <div class="card-header"><h2>所有待關注工單</h2><span class="text-faint text-sm">逾期／高風險／待驗收／退回，依急迫程度排序</span></div>
         <div id="attention-table"></div>
-        <div class="urgent-mobile-more"><a class="btn btn-secondary btn-block" href="workorders.html">查看全部工單</a></div>
+        <div class="dash-view-all-footer">
+          <span class="dash-view-all-count" id="attention-count-note"></span>
+          <a class="btn btn-secondary" href="workorders.html">查看全部工單</a>
+        </div>
       </div>
     </main>
   </div>
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260809c"></script>
-<script src="js/data.js?v=20260809c"></script>
-<script src="js/shell.js?v=20260809c"></script>
+<script src="js/main.js?v=20260811a"></script>
+<script src="js/data.js?v=20260811a"></script>
+<script src="js/shell.js?v=20260811a"></script>
 <script>
 (function () {
   "use strict";
@@ -410,9 +412,9 @@
   }
   renderHotspot(document.getElementById("dash-hotspot-root"), workOrders);
 
-  // ---------- 需要立即處理 (top 4 summary) + 所有待關注工單 (full table) ----------
+  // ---------- 需要立即處理 (top 3 summary) + 所有待關注工單 (full table) ----------
   // Both read from the exact same sorted/filtered list — the summary is
-  // just its first 4 rows — so the two views can never disagree.
+  // just its first 3 rows — so the two views can never disagree.
   function attentionRank(w) {
     if (w.riskLevel === "overdue") return 0;
     if (w.riskLevel === "high" && w.status !== "done") return 1;
@@ -421,23 +423,29 @@
     return 4;
   }
   var attention = workOrders.filter(function (w) { return attentionRank(w) < 4; }).sort(function (a, b) { return attentionRank(a) - attentionRank(b); });
-  var urgentTop = attention.slice(0, 4);
+  var urgentTop = attention.slice(0, 3);
 
   var summaryMount = document.getElementById("dash-urgent-summary");
   if (!urgentTop.length) {
     summaryMount.innerHTML = CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有需要立即處理的事項", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有逾期與高風險工單皆已妥善處理。" });
   } else {
+    // Two independent, non-nested controls per row: a photo <button> that
+    // only opens the Lightbox, and a real <a> that carries title/位置/風險/
+    // 狀態/SLA as its own visible (and therefore accessible-name) content —
+    // no role="link" div, no keydown-to-navigate, no double interaction.
     summaryMount.innerHTML = urgentTop.map(function (w) {
       var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
       return (
-        '<div class="dash-urgent-item" tabindex="0" role="link" data-goto="workorder-detail.html?id=' + w.id + '" data-wo-id="' + w.id + '" aria-label="' + w.title + '，' + w.buildingName + w.floor + '，' + risk.label + '，' + status.label + '">' +
+        '<div class="dash-urgent-item" data-wo-id="' + w.id + '">' +
         '<span class="dash-urgent-photo" data-photo-mount></span>' +
+        '<a class="dash-urgent-link" href="workorder-detail.html?id=' + w.id + '">' +
         '<span class="dash-urgent-body">' +
         '<span class="dash-urgent-title">' + w.title + "</span>" +
         '<span class="dash-urgent-meta">' + w.buildingName + " " + w.floor + " " + w.location + "</span>" +
         '<span class="dash-urgent-badges"><span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + '</span><span class="badge ' + status.badge + '">' + status.label + "</span></span>" +
         '<span class="dash-urgent-sla">SLA 期限：' + D.fmtDate(w.slaDueAt) + "</span>" +
         "</span>" +
+        "</a>" +
         "</div>"
       );
     }).join("");
@@ -452,28 +460,39 @@
         photoMount.innerHTML = '<div class="photo-empty-state dash-urgent-thumb" style="padding:0;" title="尚無現場照片">' + ico("image") + "</div>";
       }
     });
-
-    summaryMount.querySelectorAll(".dash-urgent-item").forEach(function (item) {
-      function go() { window.location.href = item.getAttribute("data-goto"); }
-      item.addEventListener("click", function (e) { if (e.target.closest(".photo-thumbnail-button")) return; go(); });
-      item.addEventListener("keydown", function (e) {
-        if (e.target !== item) return;
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); }
-      });
-    });
   }
 
+  // Desktop renders at most 6 rows here (mobile CSS further trims to 3 of
+  // those 6) — "所有待關注工單" is a capped preview, not a duplicate of the
+  // full 12-row list already shown above; the count note below says so.
+  var ATTENTION_TABLE_CAP = 6;
   var attentionMount = document.getElementById("attention-table");
-  if (!attention.length) {
+  var attentionRows = attention.slice(0, ATTENTION_TABLE_CAP);
+
+  var countNote = document.getElementById("attention-count-note");
+  if (attention.length > ATTENTION_TABLE_CAP) {
+    countNote.textContent = "顯示前 " + ATTENTION_TABLE_CAP + " 筆，共 " + attention.length + " 筆待關注工單";
+  } else if (attention.length > 0) {
+    countNote.textContent = "共 " + attention.length + " 筆待關注工單";
+  }
+
+  if (!attentionRows.length) {
     attentionMount.innerHTML = '<div class="card-body">' + CO.stateBlockHtml("empty", { icon: "checkCircle", title: "目前沒有需要關注的工單", message: forcedState === "empty" ? "目前沒有任何工單資料。" : "所有逾期、高風險、待驗收與退回工單皆已妥善處理。" }) + "</div>";
   } else {
-    var rowsHtml = attention.map(function (w) {
+    // 標題/位置 carries a real <a> (Tab-focusable, Enter opens the work
+    // order) with an aria-label spelling out title/building/floor/risk/
+    // status, since those last two live in sibling cells outside the link's
+    // own visible text. The row keeps mouse convenience via a click
+    // delegate that steps aside for any nested <a>/<button> (the title link
+    // and the photo Lightbox button) so neither double-navigates.
+    var rowsHtml = attentionRows.map(function (w) {
       var risk = D.RISK_LEVELS[w.riskLevel], status = D.STATUS_META[w.status];
+      var linkLabel = w.title + "，" + w.buildingName + w.floor + "，" + risk.label + "，" + status.label;
       return (
         '<tr class="row-link" data-row-id="' + w.id + '">' +
         '<td data-label="現場" class="attention-photo-cell" data-wo-id="' + w.id + '"></td>' +
         '<td data-label="工單編號"><span class="cell-mono">' + w.id + "</span></td>" +
-        '<td data-label="標題 / 位置"><span class="cell-primary">' + w.title + '</span><div class="cell-muted">' + w.buildingName + " " + w.floor + " " + w.location + "</div></td>" +
+        '<td data-label="標題 / 位置"><a class="cell-primary attention-row-link" href="workorder-detail.html?id=' + w.id + '" aria-label="' + linkLabel + '">' + w.title + '</a><div class="cell-muted">' + w.buildingName + " " + w.floor + " " + w.location + "</div></td>" +
         '<td data-label="類型">' + w.facilityLabel + "</td>" +
         '<td data-label="風險"><span class="badge ' + risk.badge + '"><span class="dot"></span>' + risk.label + "</span></td>" +
         '<td data-label="狀態"><span class="badge ' + status.badge + '">' + status.label + "</span></td>" +
@@ -487,7 +506,7 @@
       "<tbody>" + rowsHtml + "</tbody>" +
       "</table></div>";
 
-    attention.forEach(function (w) {
+    attentionRows.forEach(function (w) {
       var cell = attentionMount.querySelector('.attention-photo-cell[data-wo-id="' + w.id + '"]');
       if (!cell) return;
       var firstPhoto = w.photos && w.photos.issue && w.photos.issue[0];
@@ -500,7 +519,7 @@
 
     attentionMount.querySelectorAll("tr.row-link").forEach(function (tr) {
       tr.addEventListener("click", function (e) {
-        if (e.target.closest(".photo-thumbnail-button")) return;
+        if (e.target.closest("a,button")) return;
         window.location.href = "workorder-detail.html?id=" + tr.getAttribute("data-row-id");
       });
     });
