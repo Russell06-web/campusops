@@ -45,11 +45,12 @@
      item's left indicator bar. A distinct hue AND a distinct role from
      --color-caution below: this one never appears as text or in the main
      content area, so it can't be mistaken for a risk/warning state.
-     Lightened well beyond the given #D2A144 (only 1.91:1 against the new
-     --color-sidebar-active, which shares the primary's terracotta luminance
-     — the two are too close in lightness for a 3px indicator to read
-     against it at the given value) to #EDD394 (3.25:1, the WCAG 1.4.11
-     non-text floor for graphical objects, with a small safety margin). */
+     Lightened well beyond the originally-given #D2A144 (only 1.91:1
+     against --color-sidebar-active at the time, which then shared
+     --color-primary's terracotta luminance) to #EDD394. Still re-verified
+     against the current, decoupled --color-sidebar-active (#9D6257):
+     3.32:1, clear of the WCAG 1.4.11 non-text 3:1 floor for graphical
+     objects. */
   --color-campus-accent: #edd394;
 
   /* Status palette — reserved. Red/orange/yellow ONLY for danger/overdue/
@@ -91,11 +92,13 @@
 
   /* Sidebar is a fixed warm-gray-blue identity, independent of the
      light/dark content theme — it never flips, so these are plain values,
-     not re-declared per mode. --color-sidebar-active mirrors
-     --color-primary (same adjusted value, same reasoning). */
+     not re-declared per mode. --color-sidebar-active is intentionally its
+     OWN muted brick tone, distinct from --color-primary, so "current page"
+     (sidebar) and "primary action" (buttons) read as two different signals
+     instead of the same color doing both jobs. */
   --color-sidebar: #46545b;
   --color-sidebar-hover: #56666e;
-  --color-sidebar-active: #b25948;
+  --color-sidebar-active: #9d6257;
   --color-sidebar-text: #f8faf9;
   --color-sidebar-text-soft: #e1e6e7;
   --color-sidebar-text-muted: #c8d1d3;
