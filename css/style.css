@@ -11,49 +11,60 @@
      brand reads consistently regardless of a visitor's OS setting; the
      [data-theme="dark"] block below is kept only as a manual-override hook
      for a possible future in-app toggle. */
-  --color-bg: #f3f6f2;
+  --color-bg: #f4f5f3;
   --color-surface: #ffffff;
-  --color-surface-sunken: #eaf0ec;
-  --color-border: #d7e1da;
-  --color-border-strong: #bdccc2;
+  --color-surface-sunken: #ecefed;
+  --color-border: #d9dedc;
+  --color-border-strong: #bcc6c2;
 
   /* Text */
-  --color-text: #1f2a25;
-  --color-text-soft: #46544d;
-  --color-text-muted: #68766f;
-  /* One step darker than a literal #82908b/similar pale gray (sub-4.5:1 on
-     white) so small faint text — table headers, captions, timestamps —
-     still clears WCAG AA 4.5:1; same hue, same "most receded" role. */
-  --color-text-faint: #63706a;
+  --color-text: #283238;
+  --color-text-soft: #4b575d;
+  --color-text-muted: #667176;
+  /* Darkened from the given #758086 (3.70:1 on --color-bg / 4.05:1 on
+     white — both sub-4.5:1) so small faint text — table headers, captions,
+     timestamps — still clears WCAG AA 4.5:1; same hue, same "most
+     receded" role. */
+  --color-text-faint: #677176;
   --color-text-on-primary: #ffffff;
 
-  /* Brand — "leaf green", the ONE primary action color (buttons, links,
+  /* Brand — terracotta/rust, the ONE primary action color (buttons, links,
      active nav/selection state, focus rings on interactive brand controls).
      Deliberately not used as ambient background filler across cards/icons/
-     panels — see --color-neutral-bg for that instead. */
-  --color-primary: #2f6b4f;
-  --color-primary-hover: #24573f;
-  --color-primary-active: #1c4633;
-  --color-primary-soft: #e2f0e7;
-  --color-primary-soft-border: #bcdbc7;
-  --color-primary-soft-ink: #24573f;
+     panels — see --color-neutral-bg for that instead.
+     Darkened slightly from the given #B85C4A (white text on it measured
+     4.4989:1 — just under the 4.5:1 AA floor) to #B25948 (4.76:1). */
+  --color-primary: #b25948;
+  --color-primary-hover: #9f493c;
+  --color-primary-active: #823b31;
+  --color-primary-soft: #f8e9e5;
+  --color-primary-soft-border: #e8c3bb;
+  --color-primary-soft-ink: #813d32;
 
-  /* Campus wayfinding accent — sunlight yellow, used ONLY for the active
-     sidebar item's left indicator bar. A distinct hue AND a distinct role
-     from --color-caution below: this one never appears as text or in the
-     main content area, so it can't be mistaken for a risk/warning state. */
-  --color-campus-accent: #e0b04a;
+  /* Campus wayfinding accent — warm gold, used ONLY for the active sidebar
+     item's left indicator bar. A distinct hue AND a distinct role from
+     --color-caution below: this one never appears as text or in the main
+     content area, so it can't be mistaken for a risk/warning state.
+     Lightened well beyond the given #D2A144 (only 1.91:1 against the new
+     --color-sidebar-active, which shares the primary's terracotta luminance
+     — the two are too close in lightness for a 3px indicator to read
+     against it at the given value) to #EDD394 (3.25:1, the WCAG 1.4.11
+     non-text floor for graphical objects, with a small safety margin). */
+  --color-campus-accent: #edd394;
 
   /* Status palette — reserved. Red/orange/yellow ONLY for danger/overdue/
-     warning states. "College blue" carries charts, links and informational/
-     focus states instead of green, so green stays legible as the one brand
-     color and doesn't dominate every chart. */
+     warning states. Slate blue carries charts, links and informational/
+     focus states instead of the brand color, so terracotta stays legible
+     as the one brand color and doesn't dominate every chart.
+     -bg/-border/-ink are derived tints of the given --color-info (not
+     independently specified) so the info family keeps the same light-bg/
+     mid-border/dark-ink structure as every other status color below. */
   --color-neutral: #57635e;
   --color-neutral-bg: #eceeed;
-  --color-info: #315e8a;
-  --color-info-bg: #edf4fa;
-  --color-info-border: #bfd2e3;
-  --color-info-ink: #244968;
+  --color-info: #4d708e;
+  --color-info-bg: #f1f4f6;
+  --color-info-border: #cad4dd;
+  --color-info-ink: #364e63;
   --color-caution: #b45309;
   --color-caution-bg: #fffbeb;
   --color-caution-border: #fde68a;
@@ -78,15 +89,16 @@
   --sidebar-width-collapsed: 76px;
   --header-height: 60px;
 
-  /* Sidebar is a fixed dark-green identity, independent of the light/dark
-     content theme — it never flips, so these are plain values, not
-     re-declared per mode. */
-  --color-sidebar: #173f32;
-  --color-sidebar-hover: #235540;
-  --color-sidebar-active: #2f6b4f;
-  --color-sidebar-text: #f1f7f3;
-  --color-sidebar-text-soft: #cfe4d7;
-  --color-sidebar-text-muted: #a9c4b5;
+  /* Sidebar is a fixed warm-gray-blue identity, independent of the
+     light/dark content theme — it never flips, so these are plain values,
+     not re-declared per mode. --color-sidebar-active mirrors
+     --color-primary (same adjusted value, same reasoning). */
+  --color-sidebar: #46545b;
+  --color-sidebar-hover: #56666e;
+  --color-sidebar-active: #b25948;
+  --color-sidebar-text: #f8faf9;
+  --color-sidebar-text-soft: #e1e6e7;
+  --color-sidebar-text-muted: #c8d1d3;
   --color-sidebar-border: rgba(255, 255, 255, 0.09);
 
   --radius-sm: 4px;

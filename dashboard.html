@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>營運總覽 — CampusOps</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/style.css?v=20260811a">
+<link rel="stylesheet" href="css/style.css?v=20260811b">
 </head>
 <body data-page="dashboard" data-roles="manager">
 <a class="skip-link" href="#page-main">跳到主要內容</a>
@@ -81,9 +81,9 @@
   <div class="sidebar-scrim"></div>
 </div>
 
-<script src="js/main.js?v=20260811a"></script>
-<script src="js/data.js?v=20260811a"></script>
-<script src="js/shell.js?v=20260811a"></script>
+<script src="js/main.js?v=20260811b"></script>
+<script src="js/data.js?v=20260811b"></script>
+<script src="js/shell.js?v=20260811b"></script>
 <script>
 (function () {
   "use strict";
@@ -269,19 +269,19 @@
     var xLabels = days.map(function (d, i) {
       return '<text class="chart-axis-label" x="' + (padL + i * stepX) + '" y="' + (H - 6) + '" text-anchor="middle">' + (d.getMonth() + 1) + "/" + d.getDate() + "</text>";
     }).join("");
-    var dots1 = s1.map(function (v, i) { return '<circle cx="' + (padL + i * stepX) + '" cy="' + yFor(v) + '" r="3.5" fill="#315e8a" data-i="' + i + '" data-series="1"/>'; }).join("");
+    var dots1 = s1.map(function (v, i) { return '<circle cx="' + (padL + i * stepX) + '" cy="' + yFor(v) + '" r="3.5" fill="#4d708e" data-i="' + i + '" data-series="1"/>'; }).join("");
     var dots2 = s2.map(function (v, i) { return '<circle cx="' + (padL + i * stepX) + '" cy="' + yFor(v) + '" r="3.5" fill="#15803d" data-i="' + i + '" data-series="2"/>'; }).join("");
 
     mount.innerHTML =
       '<div class="chart-wrap"><svg viewBox="0 0 ' + W + " " + H + '" width="100%" height="200" role="img" aria-label="近 7 日工單建立與完成趨勢">' +
       gridLines + xLabels +
-      '<path d="' + pathFor(s1) + '" fill="none" stroke="#315e8a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '<path d="' + pathFor(s1) + '" fill="none" stroke="#4d708e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<path d="' + pathFor(s2) + '" fill="none" stroke="#15803d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
       dots1 + dots2 +
       "</svg>" +
       '<div class="chart-tooltip" id="trend-tooltip"></div>' +
       '</div>' +
-      '<div class="chart-legend"><div class="lg-item"><span class="lg-swatch" style="background:#315e8a;"></span>新建立工單</div><div class="lg-item"><span class="lg-swatch" style="background:#15803d;"></span>完成結案</div></div>' +
+      '<div class="chart-legend"><div class="lg-item"><span class="lg-swatch" style="background:#4d708e;"></span>新建立工單</div><div class="lg-item"><span class="lg-swatch" style="background:#15803d;"></span>完成結案</div></div>' +
       '<table class="hidden" id="trend-table"><caption>近 7 日工單建立與完成趨勢（資料表）</caption><thead><tr><th>日期</th><th>新建立</th><th>完成結案</th></tr></thead><tbody>' +
       days.map(function (d, i) { return "<tr><td>" + (d.getMonth() + 1) + "/" + d.getDate() + "</td><td>" + s1[i] + "</td><td>" + s2[i] + "</td></tr>"; }).join("") +
       "</tbody></table>";
